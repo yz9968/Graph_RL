@@ -184,17 +184,7 @@ class Agent(Entity):
             noise = noise_rate * 1 * np.random.randn(*u.shape)  # gaussian noise
             u += noise
             u = np.clip(u, -1, 1)
-            u = u[0]
-            if u >= -1 and u <= -0.6:
-                u = 0
-            elif u > -0.6 and u <= -0.2:
-                u = 1
-            elif u > -0.2 and u <= 0.2:
-                u = 2
-            elif u > 0.2 and u < 0.6:
-                u = 3
-            else:
-                u = 4
+            u = np.argmax(u)
         return u
 
     def learn(self, transitions, other_agents):

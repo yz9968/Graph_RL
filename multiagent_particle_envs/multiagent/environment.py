@@ -81,6 +81,7 @@ class MultiAgentEnv(gym.Env):
         self._reset_render()
 
     def step(self, action_n):
+        # action_n [numpy(action_shape) ]
         obs_n = []
         reward_n = []
         done_n = []
@@ -88,6 +89,7 @@ class MultiAgentEnv(gym.Env):
         self.agents = self.world.policy_agents
         # set action for each agent
         for i, agent in enumerate(self.agents):
+            print("in")
             self._set_action(action_n[i], agent, self.action_space[i])
         # advance world state
         self.world.step()
@@ -158,7 +160,6 @@ class MultiAgentEnv(gym.Env):
             action = act
         else:
             action = [action]
-
         if agent.movable:
             # physical action
             if self.discrete_action_input:
@@ -746,7 +747,7 @@ class MultiAgentEnv_maddpg(MultiAgentEnv):
             ax.add_artist(start)
 
             for k in range(len(self.states)):
-                if k % 5 == 0 or k == len(self.states) - 1:
+                if k % 8 == 0 or k == len(self.states) - 1:
                     agents = [plt.Circle(agents_positions[k][i], self.agents[i].radius, fill=False, color=cmap(i % 10))
                               for i in range(self.agent_num)]
                     # agent_numbers = [plt.text(agents[i].center[0] - x_offset, agents[i].center[1] - y_offset, str(i),

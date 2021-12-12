@@ -67,13 +67,11 @@ class Runner_maddpg:
 
             if episode > 0 and episode % self.args.evaluate_rate == 0:
                 rew, info = self.evaluate()
+                self.env.render(mode='traj')
                 returns.append(rew)
                 conflict_total.append(info[0])
                 collide_wall_total.append(info[1])
                 success_total.append(info[2])
-
-            if episode % 50 == 0:
-                self.env.render(mode='traj')
 
         plt.figure()
         plt.plot(range(1, len(returns)), returns[1:])

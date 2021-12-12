@@ -20,7 +20,7 @@ class Agent:
             u = pi.cpu().numpy()
             noise = noise_rate * self.args.high_action * np.random.randn(*u.shape)  # gaussian noise
             u += noise
-            u = np.clip(u, -self.args.high_action, self.args.high_action)
+            u = np.clip(u, -self.args.high_action, self.args.high_action) # action_shape numpy (5, )
         return u.copy()
 
     def learn(self, transitions, other_agents):

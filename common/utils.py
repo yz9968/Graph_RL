@@ -50,7 +50,7 @@ def make_env(args):
     # 以下部分添加到MultiAgentEnv中
     args.n_agents = env.agent_num
     args.obs_shape = [9 for _ in range(args.n_agents)]
-    args.action_shape = [1 for _ in range(args.n_agents)]
+    args.action_shape = [5 for _ in range(args.n_agents)]
     args.high_action = 1
     args.low_action = -1
     return env, args

@@ -14,7 +14,7 @@ def get_args():
     parser.add_argument("--scenario-name", type=str, default="cr_maddpg", help="name of the scenario script")
     # parser.add_argument("--scenario-name", type=str, default="collision_avoidance", help="name of the scenario script")
     parser.add_argument("--max-episode-len", type=int, default=200, help="maximum time steps in an episode")
-    parser.add_argument("--num-episodes", type=int, default=10001, help="number of train episodes")
+    parser.add_argument("--num-episodes", type=int, default=2001, help="number of train episodes")
     parser.add_argument("--time-steps", type=int, default=2000000, help="number of time steps")
     # Core training parameters
     parser.add_argument("--lr-actor", type=float, default=1e-4, help="learning rate of actor")
