@@ -30,7 +30,7 @@ class Runner_maddpg:
         for episode in range(self.args.num_episodes):
             reward_episode = []
             steps = 0
-            self.epsilon = max(0.05, self.epsilon - 0.0001)
+            self.epsilon = max(0.05, self.epsilon - 0.0004)
 
             s = self.env.reset()
             print("current_episode {}".format(episode))

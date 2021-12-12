@@ -47,7 +47,8 @@ class Scenario(BaseScenario):
             landmark.color = np.array([0.25, 0.25, 0.25])
         # set random initial states
         for i, agent in enumerate(world.agents):
-            px, py, gx, gy, vx, vy, theta = self.generate_random_agent_attribute(world, i)
+            # px, py, gx, gy, vx, vy, theta = self.generate_random_agent_attribute(world, i)
+            px, py, gx, gy, vx, vy, theta = self.generate_circle_agent_attribute(world, i)
             world.agents[i].set(px, py, gx, gy, vx, vy, theta)
             world.agents[i].set_time_step(world.dt)
 
@@ -84,6 +85,21 @@ class Scenario(BaseScenario):
             if not collide:
                 break
 
+        v = vec_normlization(sub(Vector2(gx, gy), Vector2(px, py)))
+        v_norm = vec_multipli(v, world.agents[agent_id].v_pref)
+        theta = vec_theta(v_norm)
+        vx, vy = v_norm.x, v_norm.y
+        world.agents[agent_id].set_intent_v((vx, vy, theta))
+
+        return px, py, gx, gy, vx, vy, theta
+
+    def generate_circle_agent_attribute(self, world, agent_id):
+        circle_radius = world.boundary[1] - 1
+        angle = agent_id * 2 * np.pi / self.num_agents
+        px = circle_radius * np.cos(angle)
+        py = circle_radius * np.sin(angle)
+        gx = -px
+        gy = -py
         v = vec_normlization(sub(Vector2(gx, gy), Vector2(px, py)))
         v_norm = vec_multipli(v, world.agents[agent_id].v_pref)
         theta = vec_theta(v_norm)

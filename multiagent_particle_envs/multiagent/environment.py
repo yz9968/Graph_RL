@@ -553,7 +553,7 @@ class MultiAgentEnv_maddpg(MultiAgentEnv):
         # state list
         self.states = None
         # action list
-        self.action_list = [20, 10, 0, -10, -20] # 角度
+        self.action_list = [10, 5, 0, -5, -10] # 角度
         self.agent_times = None
         # goal setting
         self.goal_size = 0.5
