@@ -94,8 +94,8 @@ class Agent(Entity):
     def __init__(self):
         super(Agent, self).__init__()
         # 智能体相关属性
-        self.v_pref = 1.0
-        self.radius = 4.0
+        self.v_pref = 7.5  # 海里 / minute
+        self.radius = 5.0  # 海里
         self.px = None
         self.py = None
         self.gx = None
@@ -107,7 +107,7 @@ class Agent(Entity):
         self.theta = None
         self.agent_id = None
         self.v_intent = None
-        self.time_step = 0.5
+        self.time_step = 0.4 # minute
         self.policy = None
         self.done = 0  # 0：exist but no potential collision；1：reach_goal；2：exit_boundary ；3：exist but detect potential collision
         self.dist_to_goal = None
@@ -143,7 +143,7 @@ class Agent(Entity):
         self.v_pref = np.random.uniform(0.5, 1.5)
         self.radius = np.random.uniform(0.3, 0.5)
 
-    def set(self, px, py, gx, gy, vx, vy, theta, v_pref=1, radius=0.4):
+    def set(self, px, py, gx, gy, vx, vy, theta):
         self.px = px
         self.py = py
         self.gx = gx
@@ -151,8 +151,6 @@ class Agent(Entity):
         self.vx = vx
         self.vy = vy
         self.theta = theta
-        self.v_pref = v_pref
-        self.radius = radius
         self.sx = px
         self.sy = py
 
@@ -189,6 +187,7 @@ class Agent(Entity):
 
     def learn(self, transitions, other_agents):
         self.policy.train(transitions, other_agents)
+
     # def step(self, action):
     #     """
     #     perform an action and update the state
@@ -253,7 +252,7 @@ class World(object):
         # color dimensionality
         self.dim_color = 3
         # simulation timestep
-        self.dt = 0.2
+        self.dt = 0.4 # minute
         # physical damping
         self.damping = 0.25
         # contact response parameters

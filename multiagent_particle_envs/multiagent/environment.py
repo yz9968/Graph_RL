@@ -304,19 +304,20 @@ class MultiAgentEnv_GRL(MultiAgentEnv):
         self.done_callback = done_callback
         # environment setting
         self.observation_space = 9
-        self.action_space = 1
+        self.action_space = 5
         self.simulation_done = None
         # state list
         self.states = None
         # action list
-        self.action_list = [5, 0, -5] # 角度
+        self.action_list = [10, 5, 0, -5, -10] # 角度
         self.agent_times = None
         # goal setting
-        self.goal_size = 1
+        self.goal_size = 2.0 # 海里
         # evaluate metric
         self.success_num = 0
         self.collision_num = 0
         self.exit_boundary_num = 0
+        self.collision_value = None
 
     def reset(self):
         # reset world
@@ -324,9 +325,11 @@ class MultiAgentEnv_GRL(MultiAgentEnv):
         self.agents = self.world.agents
         self.agent_num = len(self.agents)
         self.simulation_done = False
+        self.conflict_num_episode = 0
         # record observations for each agent
         obs = [agent.get_full_state() for agent in self.agents]
         self.agent_times = [0 for _ in range(self.agent_num)]
+        self.collision_value = []
         self.states = []
         self.states.append(obs)
         cnet = Collision_Network(obs)
@@ -388,6 +391,7 @@ class MultiAgentEnv_GRL(MultiAgentEnv):
                 continue
             elif dist_to_goal[i] <= self.goal_size:
                 Reach_Goal.append(True)
+                agent.px, agent.py = agent.gx, agent.gy
                 self.success_num += 1
                 agent.done = 1
                 done_signals[i] = 1
@@ -413,16 +417,15 @@ class MultiAgentEnv_GRL(MultiAgentEnv):
             if agent.done != 1 and agent.done != 2:
                 collision_value_row = collision_mat[i]
                 self.collision_num += sum(collision_value_row == 1)
+                self.conflict_num_episode += sum(collision_value_row == 1)
                 if np.sum(collision_value_row) == 0:
                     agent.done = 0
                 else:
                     agent.done = 3
 
-        done_agent_id = [agent.done for agent in self.agents]
-
         # compute reward
-        reward = self.reward_callback(self.world, collision_mat, Reach_Goal, Exit_Boundary, dist_to_goal)
-
+        reward, c_v = self.reward_callback(self.world, collision_mat, Reach_Goal, Exit_Boundary, dist_to_goal)
+        self.collision_value.append(c_v)
         next_adj = collision_mat
 
         terminal = True
@@ -485,12 +488,13 @@ class MultiAgentEnv_GRL(MultiAgentEnv):
             plt.show()
         elif mode == 'traj':
             fig, ax = plt.subplots(figsize=(7, 7))
+            boundary = self.world.boundary[1]
             ax.tick_params(labelsize=16)
-            ax.set_xlim(-20, 20)
-            ax.set_ylim(-20, 20)
-            ax.set_xlabel('x(km)', fontsize=16)
-            ax.set_ylabel('y(km)', fontsize=16)
-            
+            ax.set_xlim(-(boundary + 1), boundary + 1)
+            ax.set_ylim(-(boundary + 1), boundary + 1)
+            ax.set_xlabel('x(nautical miles)', fontsize=16)
+            ax.set_ylabel('y(nautical miles)', fontsize=16)
+
             agents_positions = [[self.states[i][j].position for j in range(self.agent_num)]
                                 for i in range(len(self.states))]
 
@@ -501,12 +505,16 @@ class MultiAgentEnv_GRL(MultiAgentEnv):
             goal = mlines.Line2D(goal_x, goal_y, color=goal_color, marker='*', linestyle='None', markersize=15,
                                  label='Goal')
             start = mlines.Line2D(start_x, start_y, color=start_color, marker='*', linestyle='None', markersize=15,
-                                 label='Goal')
+                                  label='Goal')
+            conflict_num = plt.text(-boundary, boundary, 'conflict_num %d' % (self.conflict_num_episode), color='red', fontsize=18)
+            label = plt.text(boundary, boundary, 'GRL', color='blue', fontsize=18)
             ax.add_artist(goal)
             ax.add_artist(start)
+            ax.add_artist(conflict_num)
+            ax.add_artist(label)
 
             for k in range(len(self.states)):
-                if k % 10 == 0 or k == len(self.states) - 1:
+                if k % 5 == 0 or k == len(self.states) - 1:
                     agents = [plt.Circle(agents_positions[k][i], self.agents[i].radius, fill=False, color=cmap(i % 10))
                               for i in range(self.agent_num)]
                     # agent_numbers = [plt.text(agents[i].center[0] - x_offset, agents[i].center[1] - y_offset, str(i),
@@ -516,16 +524,19 @@ class MultiAgentEnv_GRL(MultiAgentEnv):
                         ax.add_artist(agent)
 
                 if k != 0:
-                    # nav_direction = plt.Line2D((self.states[k - 1][0].px, self.states[k][0].px),
-                    #                            (self.states[k - 1][0].py, self.states[k][0].py),
-                    #                            color=agent_color, ls='solid')
-                    agent_directions = [plt.Line2D((self.states[k - 1][i].px, self.states[k][i].px),
-                                                   (self.states[k - 1][i].py, self.states[k][i].py),
-                                                   color=cmap(i), ls='solid')
-                                        for i in range(self.agent_num)]
-                    # ax.add_artist(nav_direction)
-                    for agent_direction in agent_directions:
-                        ax.add_artist(agent_direction)
+                    nav_directions = [plt.Line2D((self.states[k - 1][i].px, self.states[k][i].px),
+                                               (self.states[k - 1][i].py, self.states[k][i].py),
+                                               color=cmap(i), ls='solid')
+                                     for i in range(self.agent_num)]
+                    # agent_directions = [plt.Line2D((self.states[k - 1][i].px, self.states[k][i].px),
+                    #                                (self.states[k - 1][i].py, self.states[k][i].py),
+                    #                                color=cmap(i), ls='solid')
+                    #                     for i in range(self.agent_num)]
+                    #
+                    # for agent_direction in agent_directions:
+                    #     ax.add_artist(agent_direction)
+                    for nav_direction in nav_directions:
+                        ax.add_artist(nav_direction)
 
             plt.show()
 
@@ -556,11 +567,13 @@ class MultiAgentEnv_maddpg(MultiAgentEnv):
         self.action_list = [10, 5, 0, -5, -10] # 角度
         self.agent_times = None
         # goal setting
-        self.goal_size = 0.5
+        self.goal_size = 2.0 # 海里
         # evaluate metric
         self.success_num = 0
         self.collision_num = 0
         self.exit_boundary_num = 0
+        self.conflict_num_episode = None
+        self.collision_value = None
 
     def reset(self):
         # reset world
@@ -571,9 +584,11 @@ class MultiAgentEnv_maddpg(MultiAgentEnv):
         self.agents = self.world.agents
         self.agent_num = len(self.agents)
         self.simulation_done = False
+        self.conflict_num_episode = 0
         # record observations for each agent
         obs = [agent.get_full_state() for agent in self.agents]
         self.agent_times = [0 for _ in range(self.agent_num)]
+        self.collision_value = []
         self.states = []
         self.states.append(obs)
         obs = self.get_obs(obs)
@@ -633,6 +648,7 @@ class MultiAgentEnv_maddpg(MultiAgentEnv):
                 continue
             elif dist_to_goal[i] <= self.goal_size:
                 Reach_Goal.append(True)
+                agent.px, agent.py = agent.gx + 0.0001, agent.gy + 0.0001
                 self.success_num += 1
                 agent.done = 1
                 done_signals[i] = 1
@@ -658,13 +674,17 @@ class MultiAgentEnv_maddpg(MultiAgentEnv):
             if agent.done != 1 and agent.done != 2:
                 collision_value_row = collision_mat[i]
                 self.collision_num += sum(collision_value_row == 1)
+                self.conflict_num_episode += sum(collision_value_row == 1)
+                # # no collision resolution
+                # agent.done = 0
                 if np.sum(collision_value_row) == 0:
                     agent.done = 0
                 else:
                     agent.done = 3
 
         # compute reward
-        reward = self.reward_callback(self.world, collision_mat, Reach_Goal, Exit_Boundary, dist_to_goal)
+        reward, c_v = self.reward_callback(self.world, collision_mat, Reach_Goal, Exit_Boundary, dist_to_goal)
+        self.collision_value.append(c_v)
 
         terminal = True
         # 判断是否到达终态
@@ -726,11 +746,12 @@ class MultiAgentEnv_maddpg(MultiAgentEnv):
             plt.show()
         elif mode == 'traj':
             fig, ax = plt.subplots(figsize=(7, 7))
+            boundary = self.world.boundary[1]
             ax.tick_params(labelsize=16)
-            ax.set_xlim(-7, 7)
-            ax.set_ylim(-7, 7)
-            ax.set_xlabel('x(km)', fontsize=16)
-            ax.set_ylabel('y(km)', fontsize=16)
+            ax.set_xlim(-(boundary + 1), boundary + 1)
+            ax.set_ylim(-(boundary + 1), boundary + 1)
+            ax.set_xlabel('x(nautical miles)', fontsize=16)
+            ax.set_ylabel('y(nautical miles)', fontsize=16)
 
             agents_positions = [[self.states[i][j].position for j in range(self.agent_num)]
                                 for i in range(len(self.states))]
@@ -743,11 +764,15 @@ class MultiAgentEnv_maddpg(MultiAgentEnv):
                                  label='Goal')
             start = mlines.Line2D(start_x, start_y, color=start_color, marker='*', linestyle='None', markersize=15,
                                   label='Goal')
+            conflict_num = plt.text(-boundary, boundary, 'conflict_num %d' % (self.conflict_num_episode), color='red', fontsize=18)
+            label = plt.text(boundary, boundary, 'maddpg', color='blue', fontsize=18)
             ax.add_artist(goal)
             ax.add_artist(start)
+            ax.add_artist(conflict_num)
+            ax.add_artist(label)
 
             for k in range(len(self.states)):
-                if k % 8 == 0 or k == len(self.states) - 1:
+                if k % 5 == 0 or k == len(self.states) - 1:
                     agents = [plt.Circle(agents_positions[k][i], self.agents[i].radius, fill=False, color=cmap(i % 10))
                               for i in range(self.agent_num)]
                     # agent_numbers = [plt.text(agents[i].center[0] - x_offset, agents[i].center[1] - y_offset, str(i),
@@ -757,17 +782,19 @@ class MultiAgentEnv_maddpg(MultiAgentEnv):
                         ax.add_artist(agent)
 
                 if k != 0:
-                    # nav_direction = plt.Line2D((self.states[k - 1][0].px, self.states[k][0].px),
-                    #                            (self.states[k - 1][0].py, self.states[k][0].py),
-                    #                            color=agent_color, ls='solid')
-                    agent_directions = [plt.Line2D((self.states[k - 1][i].px, self.states[k][i].px),
-                                                   (self.states[k - 1][i].py, self.states[k][i].py),
-                                                   color=cmap(i), ls='solid')
-                                        for i in range(self.agent_num)]
-                    # ax.add_artist(nav_direction)
-                    for agent_direction in agent_directions:
-                        ax.add_artist(agent_direction)
-
+                    nav_directions = [plt.Line2D((self.states[k - 1][i].px, self.states[k][i].px),
+                                               (self.states[k - 1][i].py, self.states[k][i].py),
+                                               color=cmap(i), ls='solid')
+                                     for i in range(self.agent_num)]
+                    # agent_directions = [plt.Line2D((self.states[k - 1][i].px, self.states[k][i].px),
+                    #                                (self.states[k - 1][i].py, self.states[k][i].py),
+                    #                                color=cmap(i), ls='solid')
+                    #                     for i in range(self.agent_num)]
+                    #
+                    # for agent_direction in agent_directions:
+                    #     ax.add_artist(agent_direction)
+                    for nav_direction in nav_directions:
+                        ax.add_artist(nav_direction)
             plt.show()
 
         elif mode == 'video':

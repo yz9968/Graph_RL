@@ -4,7 +4,6 @@ from runner_ppo import Runner_PPO
 from common.arguments import get_args
 from common.utils import make_env
 import numpy as np
-import random
 import torch
 
 
@@ -15,8 +14,7 @@ if __name__ == '__main__':
     # runner = Runner_DGN(args, env)
     runner = Runner_maddpg(args, env)
     if args.evaluate:
-        returns = runner.evaluate()
-        print('Average returns is', returns)
+        runner.evaluate_model()
     else:
         runner.run()
 

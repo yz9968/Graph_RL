@@ -8,6 +8,8 @@ from multiagent_particle_envs.multiagent.core import *
 class Scenario(BaseScenario):
     def __init__(self):
         # penalty reward setting
+        self.collision_level1 = -0.25
+        self.collision_level2 = -1.0
         self.collision_penalty = -10.0
         self.dist_to_goal_penalty = -1.0
         self.exit_boundary = -10.0
@@ -15,7 +17,7 @@ class Scenario(BaseScenario):
     def make_world(self):
         world = World()
         # set size of the world
-        world.set_world(-6, 6, -6, 6)
+        world.set_world(-160, 160, -160, 160)
         # set any world properties first
         self.num_agents = 8
         self.num_landmarks = self.num_agents
@@ -94,7 +96,7 @@ class Scenario(BaseScenario):
         return px, py, gx, gy, vx, vy, theta
 
     def generate_circle_agent_attribute(self, world, agent_id):
-        circle_radius = world.boundary[1] - 1
+        circle_radius = world.boundary[1] - 10
         angle = agent_id * 2 * np.pi / self.num_agents
         px = circle_radius * np.cos(angle)
         py = circle_radius * np.sin(angle)
@@ -135,6 +137,7 @@ class Scenario(BaseScenario):
 
     def reward(self, world, collision_mat, reach_goals, exit_boundary, dist_to_goal):
         reward = []
+        c_v = 0
         for i, agent in enumerate(world.agents):
             if reach_goals[i]:
                 reward.append(0)
@@ -146,9 +149,12 @@ class Scenario(BaseScenario):
                 collision_value_row = collision_mat[i]
                 r1 = sum(collision_value_row == 1) * self.collision_penalty
                 r2 = dist_to_goal[i] * self.dist_to_goal_penalty
+                r3 = sum(np.logical_and(collision_value_row > 0, collision_value_row <= 0.5)) * self.collision_level1
+                r4 = r2 = sum(np.logical_and(collision_value_row > 0.5, collision_value_row < 1)) * self.collision_level2
                 r = r1 + r2
+                c_v = -r3 - r4 + sum(collision_value_row == 1) * 2.0
                 reward.append(r)
-        return reward
+        return reward, c_v
 
     # def reward(self, agent, world):
     #     # Agents are rewarded based on minimum agent distance to each landmark, penalized for collisions

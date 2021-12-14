@@ -4,6 +4,7 @@ import torch
 import torch.optim as optim
 from dgn.DGN import DGN
 import os
+import matplotlib.pyplot as plt
 import numpy as np
 import logging
 import time
@@ -12,6 +13,9 @@ import time
 class Runner_DGN:
     def __init__(self, args, env):
         self.args = args
+        device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "cpu")
+        logging.info('Using device: %s', device)
+        USE_CUDA = torch.cuda.is_available()
         self.env = env
         self.epsilon = args.epsilon
         self.num_episode = args.num_episodes
@@ -19,9 +23,9 @@ class Runner_DGN:
         self.agents = self.env.agents
         self.agent_num = self.env.agent_num
         self.buffer = ReplayBuffer(args.buffer_size)
-        self.n_action = 3
+        self.n_action = 5
         self.hidden_dim = 128
-        self.lr = 1e-2
+        self.lr = 1e-3
         self.batch_size = args.batch_size
         self.train_epoch = 5
         self.gamma = args.gamma
@@ -34,10 +38,11 @@ class Runner_DGN:
         self.save_path = self.args.save_dir + '/' + self.args.scenario_name
         if not os.path.exists(self.save_path):
             os.makedirs(self.save_path)
+        self.model_name = '/8_agent/8_graph_rl_weight.pth'
+        if os.path.exists(self.save_path + self.model_name):
+            self.model.load_state_dict(torch.load(self.save_path + self.model_name))
+            print("successfully load model: {}".format(self.model_name))
 
-        device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "cpu")
-        logging.info('Using device: %s', device)
-        USE_CUDA = torch.cuda.is_available()
 
     def run(self):
         Obs = np.ones((self.batch_size, self.agent_num, self.observation_space))
@@ -52,12 +57,11 @@ class Runner_DGN:
         start_episode = 100
         start = time.time()
         episode = -1
-        rl_model_dir = 'graph_rl_weight.pth'
+        rl_model_dir = self.save_path + self.model_name
         while episode < self.num_episode:
             if episode > start_episode:
-                self.epsilon = max(0.05, self.epsilon - 0.0004)
+                self.epsilon = max(0.05, self.epsilon - 0.00015)
 
-            reward_episode = []
             episode += 1
             step = 0
             obs, adj = self.env.reset()
@@ -85,35 +89,22 @@ class Runner_DGN:
                     self.buffer.add(obs, action, reward, next_obs, adj, next_adj, info['simulation_done'])
                     obs = next_obs
                     adj = next_adj
-                    reward_episode.append(sum(reward) / 1000)
+
                 else:
                     # print(" agent_terminated_times:", self.env.agent_times)
                     if self.env.simulation_done:
                         print("all agents done!")
                     break
 
-            reward_total.append(sum(reward_episode))
-            # print(" current done agent:", env.done_agent_idx)
-            if episode % 5 == 0:
-                # reward_episode_ave = sum(reward_total) / len(reward_total)
-                # print(" {} i_episode ave reward is {}".format(i_episode, reward_episode_ave))
-                # f.write(str(reward_episode_ave) + '\n')
-                # reward_episode_ave = 0
-                print(" {} i_episode ave reward is {}".format(episode, sum(reward_episode)))
-
-            if episode % 5 == 0:
-                print("conflict num :", self.env.collision_num)
-                print("exit boundary num：", self.env.exit_boundary_num)
-                print("success num：", self.env.success_num)
-                conflict_total.append(self.env.collision_num)
-                collide_wall_total.append(self.env.exit_boundary_num)  # max
-                success_total.append(self.env.success_num)
-                self.env.collision_num = 0
-                self.env.exit_boundary_num = 0
-                self.env.success_num = 0
-
-            if episode % 50 == 0:
-                self.env.render(mode='traj')
+            if episode > 0 and episode % self.args.evaluate_rate == 0:
+                rew, info = self.evaluate()
+                if episode % (5 * self.args.evaluate_rate) == 0:
+                    self.env.render(mode='traj')
+                reward_total.append(rew)
+                conflict_total.append(info[0])
+                collide_wall_total.append(info[1])
+                success_total.append(info[2])
+            self.env.conflict_num_episode = 0
 
             if episode < start_episode:
                 continue
@@ -152,84 +143,139 @@ class Runner_DGN:
             if episode % 5 == 0:
                 self.model_tar.load_state_dict(self.model.state_dict())
 
-            if episode != 0 and episode % 2000 == 0:
+            if episode != 0 and episode % 500 == 0:
                 torch.save(self.model.state_dict(), rl_model_dir)
                 print("torch save model for rl_weight")
 
         end = time.time()
         print("花费时间:", end - start)
 
-        import matplotlib.pyplot as plt
-
-        plt.figure('reward')
-        plt.plot(np.arange(self.num_episode + 1), reward_total)
-        plt.title('reward')
-        plt.xlabel('i_episode')
-        plt.ylabel('reward')
-        plt.show()
-
         fig, a = plt.subplots(2, 2)
-        x = np.arange(0, self.num_episode + 1, 5)
+        plt.title('GRL_train')
+        x = range(len(conflict_total))
         a[0][0].plot(x, conflict_total, 'b')
         a[0][0].set_title('conflict_num')
         a[0][1].plot(x, collide_wall_total, 'y')
         a[0][1].set_title('exit_boundary_num')
         a[1][0].plot(x, success_total, 'r')
         a[1][0].set_title('success_num')
-        # plt.legend()
-
+        plt.savefig(self.save_path + '/8_agent/train_metric.png', format='png')
         plt.show()
-        # for time_step in tqdm(range(self.args.time_steps)):
-        #     # reset the environment
-        #     if time_step % self.episode_limit == 0:
-        #         s = self.env.reset()
-        #     u = []
-        #     actions = []
-        #     with torch.no_grad():
-        #         for agent_id, agent in enumerate(self.agents):
-        #             action = agent.select_action(s[agent_id], self.noise, self.epsilon)
-        #             u.append(action)
-        #             actions.append(action)
-        #     for i in range(self.args.n_agents, self.args.n_players):
-        #         actions.append([0, np.random.rand() * 2 - 1, 0, np.random.rand() * 2 - 1, 0])
-        #     s_next, r, done, info = self.env.step(actions)
-        #     self.buffer.store_episode(s[:self.args.n_agents], u, r[:self.args.n_agents], s_next[:self.args.n_agents])
-        #     s = s_next
-        #     if self.buffer.current_size >= self.args.batch_size:
-        #         transitions = self.buffer.sample(self.args.batch_size)
-        #         for agent in self.agents:
-        #             other_agents = self.agents.copy()
-        #             other_agents.remove(agent)
-        #             agent.learn(transitions, other_agents)
-        #     if time_step > 0 and time_step % self.args.evaluate_rate == 0:
-        #         returns.append(self.evaluate())
-        #         plt.figure()
-        #         plt.plot(range(len(returns)), returns)
-        #         plt.xlabel('episode * ' + str(self.args.evaluate_rate / self.episode_limit))
-        #         plt.ylabel('average returns')
-        #         plt.savefig(self.save_path + '/plt.png', format='png')
-        #     self.noise = max(0.05, self.noise - 0.0000005)
-        #     self.epsilon = max(0.05, self.epsilon - 0.0000005)
-        #     np.save(self.save_path + '/returns.pkl', returns)
 
     def evaluate(self):
+        print("now is evaluate!")
+        self.env.collision_num = 0
+        self.env.exit_boundary_num = 0
+        self.env.success_num = 0
         returns = []
         for episode in range(self.args.evaluate_episodes):
             # reset the environment
-            s = self.env.reset()
+            obs, adj = self.env.reset()
             rewards = 0
             for time_step in range(self.args.evaluate_episode_len):
-                self.env.render()
-                actions = []
-                with torch.no_grad():
-                    for agent_id, agent in enumerate(self.agents):
-                        action = agent.select_action(s[agent_id], 0, 0)
-                        actions.append(action)
-                for i in range(self.args.n_agents, self.args.n_players):
-                    actions.append([0, np.random.rand() * 2 - 1, 0, np.random.rand() * 2 - 1, 0])
-                s_next, r, done, info = self.env.step(actions)
-                rewards += r[0]
-                s = s_next
+                if not self.env.simulation_done:
+                    actions = []
+                    obs1 = np.expand_dims(obs, 0)  # shape （1, 6, 9(observation_space)）
+                    adj1 = np.expand_dims(adj, 0)
+                    q = self.model(torch.Tensor(obs1).cuda(), torch.Tensor(adj1).cuda())[0]  # shape (100, 5)
+                    for i, agent in enumerate(self.agents):
+                        a = q[i].argmax().item()
+                        actions.append(a)
+
+                    next_obs, next_adj, reward, done_signals, info = self.env.step(actions)
+                    rewards += sum(reward)
+                    obs = next_obs
+                    adj = next_adj
+                else:
+                    break
+
+            rewards = rewards / 10000
             returns.append(rewards)
             print('Returns is', rewards)
-        return sum(returns) / self.args.evaluate_episodes
+        print("conflict num :", self.env.collision_num)
+        print("exit boundary num：", self.env.exit_boundary_num)
+        print("success num：", self.env.success_num)
+
+        return sum(returns) / self.args.evaluate_episodes, (self.env.collision_num, self.env.exit_boundary_num, self.env.success_num)
+
+    def evaluate_model(self):
+        """
+        对现有最新模型进行评估
+        :return:
+        """
+        print("now evaluate the model")
+        conflict_total = []
+        collide_wall_total = []
+        success_total = []
+        self.env.collision_num = 0
+        self.env.exit_boundary_num = 0
+        self.env.success_num = 0
+        returns = []
+        eval_episode = 100
+        for episode in range(eval_episode):
+            # reset the environment
+            obs, adj = self.env.reset()
+            rewards = 0
+            for time_step in range(self.args.evaluate_episode_len):
+                if not self.env.simulation_done:
+                    actions = []
+                    obs1 = np.expand_dims(obs, 0)  # shape （1, 6, 9(observation_space)）
+                    adj1 = np.expand_dims(adj, 0)
+                    q = self.model(torch.Tensor(obs1).cuda(), torch.Tensor(adj1).cuda())[0]  # shape (100, 5)
+                    for i, agent in enumerate(self.agents):
+                        a = q[i].argmax().item()
+                        actions.append(a)
+
+                    next_obs, next_adj, reward, done_signals, info = self.env.step(actions)
+                    rewards += sum(reward)
+                    obs = next_obs
+                    adj = next_adj
+                else:
+                    break
+
+            # if episode > 0 and episode % 10 == 0:
+            #     self.env.render(mode='traj')
+            # if episode > 0:
+            #     self.env.render(mode='traj')
+
+            plt.figure()
+            plt.title('collision_value——time')
+            x = range(len(self.env.collision_value))
+            plt.plot(x, self.env.collision_value)
+            plt.xlabel('timestep')
+            plt.ylabel('collision_value')
+            plt.savefig(self.save_path + '/8_agent/collision_value/' + str(episode) + 'collision_value.png', format='png')
+            plt.close()
+
+            rewards = rewards / 1000
+            returns.append(rewards)
+            print('Returns is', rewards)
+            print("conflict num :", self.env.collision_num)
+            print("exit boundary num：", self.env.exit_boundary_num)
+            print("success num：", self.env.success_num)
+            conflict_total.append(self.env.collision_num)
+            collide_wall_total.append(self.env.exit_boundary_num)
+            success_total.append(self.env.success_num)
+            self.env.collision_num = 0
+            self.env.exit_boundary_num = 0
+            self.env.success_num = 0
+
+        plt.figure()
+        plt.plot(range(1, len(returns)), returns[1:])
+        plt.xlabel('evaluate num')
+        plt.ylabel('average returns')
+        plt.savefig(self.save_path + '/8_agent/eval_return.png', format='png')
+
+        fig, a = plt.subplots(2, 2)
+        x = range(len(conflict_total))
+        ave_conflict = np.mean(conflict_total)
+        print("平均冲突", ave_conflict)
+        a[0][0].plot(x, conflict_total, 'b')
+        a[0][0].set_title('conflict_num')
+        a[0][1].plot(x, collide_wall_total, 'y')
+        a[0][1].set_title('exit_boundary_num')
+        a[1][0].plot(x, success_total, 'r')
+        a[1][0].set_title('success_num')
+        plt.savefig(self.save_path + '/8_agent/eval_metric.png', format='png')
+
+        plt.show()
