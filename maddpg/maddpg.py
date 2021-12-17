@@ -1,5 +1,6 @@
 import torch
 import os
+import numpy as np
 from maddpg.actor_critic import Actor, Critic
 
 
@@ -8,7 +9,7 @@ class MADDPG:
         self.args = args
         self.agent_id = agent_id
         self.train_step = 0
-
+        self.device = args.device
         # create the network
         self.actor_network = Actor(args, agent_id)
         self.critic_network = Critic(args)
@@ -37,8 +38,8 @@ class MADDPG:
             os.mkdir(self.model_path)
 
 
-        self.actor_model_name = '/8_actor_params.pkl'
-        self.critic_model_name = '/8_critic_params.pkl'
+        self.actor_model_name = '/30_actor_params.pkl'
+        self.critic_model_name = '/30_critic_params.pkl'
         # 加载模型
         if os.path.exists(self.model_path + self.actor_model_name):
             self.actor_network.load_state_dict(torch.load(self.model_path + self.actor_model_name))
@@ -79,8 +80,8 @@ class MADDPG:
                     # 因为传入的other_agents要比总数少一个，可能中间某个agent是当前agent，不能遍历去选择动作
                     u_next.append(other_agents[index].policy.actor_target_network(o_next[agent_id]))
                     index += 1
-            q_next = self.critic_target_network(o_next, u_next).detach()
 
+            q_next = self.critic_target_network(o_next, u_next).detach()
             target_q = (r.unsqueeze(1) + self.args.gamma * q_next).detach()
 
         # the q loss

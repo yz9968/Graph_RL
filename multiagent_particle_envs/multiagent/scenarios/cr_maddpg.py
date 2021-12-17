@@ -19,7 +19,7 @@ class Scenario(BaseScenario):
         # set size of the world
         world.set_world(-160, 160, -160, 160)
         # set any world properties first
-        self.num_agents = 8
+        self.num_agents = 30
         self.num_landmarks = self.num_agents
         world.collaborative = True
         # make initial conditions
@@ -49,8 +49,8 @@ class Scenario(BaseScenario):
             landmark.color = np.array([0.25, 0.25, 0.25])
         # set random initial states
         for i, agent in enumerate(world.agents):
-            # px, py, gx, gy, vx, vy, theta = self.generate_random_agent_attribute(world, i)
-            px, py, gx, gy, vx, vy, theta = self.generate_circle_agent_attribute(world, i)
+            px, py, gx, gy, vx, vy, theta = self.generate_random_agent_attribute(world, i)
+            # px, py, gx, gy, vx, vy, theta = self.generate_circle_agent_attribute(world, i)
             world.agents[i].set(px, py, gx, gy, vx, vy, theta)
             world.agents[i].set_time_step(world.dt)
 

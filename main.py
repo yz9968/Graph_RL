@@ -1,6 +1,5 @@
 from runner_dgn import Runner_DGN
 from runner_maddpg import Runner_maddpg
-from runner_ppo import Runner_PPO
 from common.arguments import get_args
 from common.utils import make_env
 import numpy as np

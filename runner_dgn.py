@@ -38,7 +38,7 @@ class Runner_DGN:
         self.save_path = self.args.save_dir + '/' + self.args.scenario_name
         if not os.path.exists(self.save_path):
             os.makedirs(self.save_path)
-        self.model_name = '/8_agent/8_graph_rl_weight.pth'
+        self.model_name = '/30_agent/30_graph_rl_weight.pth'
         if os.path.exists(self.save_path + self.model_name):
             self.model.load_state_dict(torch.load(self.save_path + self.model_name))
             print("successfully load model: {}".format(self.model_name))
@@ -60,7 +60,7 @@ class Runner_DGN:
         rl_model_dir = self.save_path + self.model_name
         while episode < self.num_episode:
             if episode > start_episode:
-                self.epsilon = max(0.05, self.epsilon - 0.00015)
+                self.epsilon = max(0.05, self.epsilon - 0.0004)
 
             episode += 1
             step = 0
@@ -159,7 +159,7 @@ class Runner_DGN:
         a[0][1].set_title('exit_boundary_num')
         a[1][0].plot(x, success_total, 'r')
         a[1][0].set_title('success_num')
-        plt.savefig(self.save_path + '/8_agent/train_metric.png', format='png')
+        plt.savefig(self.save_path + '/50_agent/train_metric_new.png', format='png')
         plt.show()
 
     def evaluate(self):
@@ -233,21 +233,22 @@ class Runner_DGN:
                 else:
                     break
 
-            # if episode > 0 and episode % 10 == 0:
-            #     self.env.render(mode='traj')
+            if episode > 0 and episode % 50 == 0:
+                self.env.render(mode='traj')
             # if episode > 0:
             #     self.env.render(mode='traj')
 
-            plt.figure()
-            plt.title('collision_value——time')
-            x = range(len(self.env.collision_value))
-            plt.plot(x, self.env.collision_value)
-            plt.xlabel('timestep')
-            plt.ylabel('collision_value')
-            plt.savefig(self.save_path + '/8_agent/collision_value/' + str(episode) + 'collision_value.png', format='png')
-            plt.close()
+            # plt.figure()
+            # plt.title('collision_value——time')
+            # x = range(len(self.env.collision_value))
+            # plt.plot(x, self.env.collision_value)
+            # plt.xlabel('timestep')
+            # plt.ylabel('collision_value')
+            # plt.savefig(self.save_path + '/30_agent/collision_value/' + str(episode) + 'collision_value.png', format='png')
+            # np.save(self.save_path + '/30_agent/collision_value/' + str(episode) + 'collision_value.npy', self.env.collision_value)
+            # plt.close()
 
-            rewards = rewards / 1000
+            rewards = rewards / 10000
             returns.append(rewards)
             print('Returns is', rewards)
             print("conflict num :", self.env.collision_num)
@@ -264,18 +265,24 @@ class Runner_DGN:
         plt.plot(range(1, len(returns)), returns[1:])
         plt.xlabel('evaluate num')
         plt.ylabel('average returns')
-        plt.savefig(self.save_path + '/8_agent/eval_return.png', format='png')
+        # plt.savefig(self.save_path + '/30_agent/eval_return_new.png', format='png')
 
         fig, a = plt.subplots(2, 2)
         x = range(len(conflict_total))
         ave_conflict = np.mean(conflict_total)
-        print("平均冲突", ave_conflict)
+        ave_success = np.mean(success_total)
+        ave_exit = np.mean(collide_wall_total)
+        zero_conflict = sum(np.array(conflict_total) == 0)
+        print("平均冲突数", ave_conflict)
+        print("平均成功率", ave_success / self.agent_num)
+        print("平均出界率", ave_exit / self.agent_num)
+        print("0冲突占比：", zero_conflict / len(conflict_total))
         a[0][0].plot(x, conflict_total, 'b')
         a[0][0].set_title('conflict_num')
         a[0][1].plot(x, collide_wall_total, 'y')
         a[0][1].set_title('exit_boundary_num')
         a[1][0].plot(x, success_total, 'r')
         a[1][0].set_title('success_num')
-        plt.savefig(self.save_path + '/8_agent/eval_metric.png', format='png')
+        # plt.savefig(self.save_path + '/30_agent/eval_metric_new.png', format='png')
 
         plt.show()

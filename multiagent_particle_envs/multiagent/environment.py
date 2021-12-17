@@ -6,6 +6,7 @@ from math import pi, sin, cos, tan, sqrt
 from multiagent_particle_envs.multiagent.multi_discrete import MultiDiscrete
 from multiagent_particle_envs.multiagent.core import Collision_Detection, Collision_Network
 from maddpg.maddpg import MADDPG
+from ppo.ppo import PPO
 
 # environment for all agents in the multiagent world
 # currently code assumes that no agents will be created/destroyed at runtime!
@@ -418,6 +419,8 @@ class MultiAgentEnv_GRL(MultiAgentEnv):
                 collision_value_row = collision_mat[i]
                 self.collision_num += sum(collision_value_row == 1)
                 self.conflict_num_episode += sum(collision_value_row == 1)
+                # # no collision resolution
+                # agent.done = 0
                 if np.sum(collision_value_row) == 0:
                     agent.done = 0
                 else:
@@ -802,9 +805,260 @@ class MultiAgentEnv_maddpg(MultiAgentEnv):
 
 # environment for all agents in the multiagent world of ppo
 class MultiAgentEnv_ppo(MultiAgentEnv):
-    def __init__(self):
+    def __init__(self, world, reset_callback=None, reward_callback=None,
+                 observation_callback=None, info_callback=None,
+                 done_callback=None, args = None, shared_viewer=True):
         super(MultiAgentEnv, self).__init__()
-        pass
+        self.world = world
+        self.agents = self.world.agents
+        self.agent_num = len(self.agents)
+        self.args = args
+        # scenario callbacks
+        self.reset_callback = reset_callback
+        self.reward_callback = reward_callback
+        self.observation_callback = observation_callback
+        self.info_callback = info_callback
+        self.done_callback = done_callback
+        # environment setting
+        self.simulation_done = None
+        # state list
+        self.states = None
+        # action list
+        self.action_list = [10, 5, 0, -5, -10] # 角度
+        self.agent_times = None
+        # goal setting
+        self.goal_size = 2.0 # 海里
+        # evaluate metric
+        self.success_num = 0
+        self.collision_num = 0
+        self.exit_boundary_num = 0
+        self.conflict_num_episode = None
+        self.collision_value = None
+
+    def reset(self):
+        # reset world
+        self.reset_callback(self.world)
+        for i, agent in enumerate(self.agents):
+            policy = PPO(self.args, agent.agent_id)
+            agent.set_policy(policy)
+        self.agents = self.world.agents
+        self.agent_num = len(self.agents)
+        self.simulation_done = False
+        self.conflict_num_episode = 0
+        # record observations for each agent
+        obs = [agent.get_full_state() for agent in self.agents]
+        self.agent_times = [0 for _ in range(self.agent_num)]
+        self.collision_value = []
+        self.states = []
+        self.states.append(obs)
+        obs = self.get_obs(obs)
+        return obs
+
+    def step(self, actions):
+        """
+        缺一个判断何时检测到潜在冲突，以及何时回归intention_v
+        :param actions: [0, 1, 2, 1, 2]
+        :return:
+        """
+        done_signals = []
+        for i in range(self.agent_num):
+            done_signals.append(0)
+
+        # update agents pos
+        for i, agent in enumerate(self.agents):
+            # no potential collision
+            if agent.done == 0:
+                v_intent = agent.get_intention_v()
+                agent.step((v_intent[0], v_intent[1]))
+                self.agent_times[i] += 1
+            elif agent.done == 3:
+                delta_theta = self.action_list[actions[i]]
+                a = agent.theta * (180 / pi)
+                a += delta_theta
+                a %= 360
+                agent.theta = a * (pi / 180)
+                vx = agent.v_pref * cos(agent.theta)
+                vy = agent.v_pref * sin(agent.theta)
+                agent.step((vx, vy))
+                self.agent_times[i] += 1
+            else:
+                continue
+
+        # update agents status
+        Exit_Boundary = []
+        for i, agent in enumerate(self.agents):
+            px = agent.px
+            py = agent.py
+            if agent.done == 1 or agent.done == 2:
+                Exit_Boundary.append(False)
+                continue
+            elif px < self.world.boundary[0] or px > self.world.boundary[1] or py < self.world.boundary[2] or py > self.world.boundary[3]:
+                Exit_Boundary.append(True)
+                self.exit_boundary_num += 1
+                agent.done = 2
+                done_signals[i] = 2
+            else:
+                Exit_Boundary.append(False)
+
+        dist_to_goal = np.array([agent.get_dist_to_goal() for agent in self.agents])
+        Reach_Goal = []
+        for i, agent in enumerate(self.agents):
+            if agent.done == 1 or agent.done == 2:
+                Reach_Goal.append(False)
+                continue
+            elif dist_to_goal[i] <= self.goal_size:
+                Reach_Goal.append(True)
+                agent.px, agent.py = agent.gx + 0.0001, agent.gy + 0.0001
+                self.success_num += 1
+                agent.done = 1
+                done_signals[i] = 1
+            else:
+                Reach_Goal.append(False)
+
+        next_obs = [agent.get_full_state() for agent in self.agents]
+        self.states.append(next_obs)
+        # generate collision network
+        cnet = Collision_Network(next_obs)
+        collision_mat = cnet.collision_matrix()
+        row, col = np.diag_indices_from(collision_mat)
+        collision_mat[row, col] = 0
+        reach_goals_idx = np.where(Reach_Goal)[0]
+        collision_mat[reach_goals_idx, :] = 0
+        collision_mat[:, reach_goals_idx] = 0
+        exit_idx = np.where(Exit_Boundary)[0]
+        collision_mat[exit_idx, :] = 0
+        collision_mat[:, exit_idx] = 0
+
+        # update agent done --- 0 or 3
+        for i, agent in enumerate(self.agents):
+            if agent.done != 1 and agent.done != 2:
+                collision_value_row = collision_mat[i]
+                self.collision_num += sum(collision_value_row == 1)
+                self.conflict_num_episode += sum(collision_value_row == 1)
+                # # no collision resolution
+                # agent.done = 0
+                if np.sum(collision_value_row) == 0:
+                    agent.done = 0
+                else:
+                    agent.done = 3
+
+        # compute reward
+        reward, c_v = self.reward_callback(self.world, collision_mat, Reach_Goal, Exit_Boundary, dist_to_goal)
+        self.collision_value.append(c_v)
+
+        terminal = True
+        # 判断是否到达终态
+        for i, agent in enumerate(self.agents):
+            if agent.done == 0 or agent.done == 3:
+                terminal = False
+                break
+
+        self.simulation_done = terminal
+        info = {'current_time_reach_goals': Reach_Goal, 'current_time_exit_boundary': Exit_Boundary, 'simulation_done': terminal}
+
+        return self.get_obs(next_obs), reward, done_signals, info
+
+    def get_obs(self, obs):
+        """
+        input obs list of FullState transform to 2-dimension numpy
+        :param obs:
+        :return: obs matrix with shape (agent_num, action_num)
+        """
+        agent_num = len(obs)
+        obs_mat = np.zeros((agent_num, 9))
+        for i in range(len(obs)):
+            ob = obs[i]
+            obs_mat[i][0] = ob.px
+            obs_mat[i][1] = ob.py
+            obs_mat[i][2] = ob.vx
+            obs_mat[i][3] = ob.vy
+            obs_mat[i][4] = ob.radius
+            obs_mat[i][5] = ob.gx
+            obs_mat[i][6] = ob.gy
+            obs_mat[i][7] = ob.v_pref
+            obs_mat[i][8] = ob.theta
+
+        return obs_mat
+
+    def render(self, mode='human'):
+        from matplotlib import animation
+        import matplotlib.pyplot as plt
+        from matplotlib import patches
+        import matplotlib.lines as mlines
+        plt.rcParams['animation.ffmpeg_path'] = '/usr/bin/ffmpeg'
+
+        x_offset = 0.11
+        y_offset = 0.11
+        cmap = plt.cm.get_cmap('hsv', 10)
+        agent_color = 'yellow'
+        goal_color = 'blue'
+        start_color = 'black'
+        arrow_color = 'red'
+        arrow_style = patches.ArrowStyle("->", head_length=4, head_width=2)
+
+        if mode == 'human':
+            fig, ax = plt.subplots(figsize=(7, 7))
+            ax.set_xlim(-20, 20)
+            ax.set_ylim(-20, 20)
+            for agent in self.agents:
+                agent_circle = plt.Circle(agent.get_position(), agent.radius, fill=False, color='r')
+                ax.add_artist(agent_circle)
+            plt.show()
+        elif mode == 'traj':
+            fig, ax = plt.subplots(figsize=(7, 7))
+            boundary = self.world.boundary[1]
+            ax.tick_params(labelsize=16)
+            ax.set_xlim(-(boundary + 1), boundary + 1)
+            ax.set_ylim(-(boundary + 1), boundary + 1)
+            ax.set_xlabel('x(nautical miles)', fontsize=16)
+            ax.set_ylabel('y(nautical miles)', fontsize=16)
+
+            agents_positions = [[self.states[i][j].position for j in range(self.agent_num)]
+                                for i in range(len(self.states))]
+
+            goal_x = [self.agents[i].gx for i in range(self.agent_num)]
+            goal_y = [self.agents[i].gy for i in range(self.agent_num)]
+            start_x = [self.agents[i].sx for i in range(self.agent_num)]
+            start_y = [self.agents[i].sy for i in range(self.agent_num)]
+            goal = mlines.Line2D(goal_x, goal_y, color=goal_color, marker='*', linestyle='None', markersize=15,
+                                 label='Goal')
+            start = mlines.Line2D(start_x, start_y, color=start_color, marker='*', linestyle='None', markersize=15,
+                                  label='Goal')
+            conflict_num = plt.text(-boundary, boundary, 'conflict_num %d' % (self.conflict_num_episode), color='red', fontsize=18)
+            label = plt.text(boundary, boundary, 'ppo', color='blue', fontsize=18)
+            ax.add_artist(goal)
+            ax.add_artist(start)
+            ax.add_artist(conflict_num)
+            ax.add_artist(label)
+
+            for k in range(len(self.states)):
+                if k % 5 == 0 or k == len(self.states) - 1:
+                    agents = [plt.Circle(agents_positions[k][i], self.agents[i].radius, fill=False, color=cmap(i % 10))
+                              for i in range(self.agent_num)]
+                    # agent_numbers = [plt.text(agents[i].center[0] - x_offset, agents[i].center[1] - y_offset, str(i),
+                    #                           color='black', fontsize=12) for i in range(self.agent_num)]
+                    for i in range(self.agent_num):
+                        agent = agents[i]
+                        ax.add_artist(agent)
+
+                if k != 0:
+                    nav_directions = [plt.Line2D((self.states[k - 1][i].px, self.states[k][i].px),
+                                               (self.states[k - 1][i].py, self.states[k][i].py),
+                                               color=cmap(i), ls='solid')
+                                     for i in range(self.agent_num)]
+                    # agent_directions = [plt.Line2D((self.states[k - 1][i].px, self.states[k][i].px),
+                    #                                (self.states[k - 1][i].py, self.states[k][i].py),
+                    #                                color=cmap(i), ls='solid')
+                    #                     for i in range(self.agent_num)]
+                    #
+                    # for agent_direction in agent_directions:
+                    #     ax.add_artist(agent_direction)
+                    for nav_direction in nav_directions:
+                        ax.add_artist(nav_direction)
+            plt.show()
+
+        elif mode == 'video':
+            pass
 
 
 # vectorized wrapper for a batch of multi-agent environments

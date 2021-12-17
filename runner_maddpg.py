@@ -9,9 +9,7 @@ import matplotlib.pyplot as plt
 class Runner_maddpg:
     def __init__(self, args, env):
         self.args = args
-        # self.device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "cpu")
-        # logging.info('Using device: %s', self.device)
-        # USE_CUDA = torch.cuda.is_available()
+        device = self.args.device
         self.noise = args.noise_rate
         self.epsilon = args.epsilon
         self.max_step = args.max_episode_len
@@ -33,8 +31,7 @@ class Runner_maddpg:
         for episode in range(self.args.num_episodes):
             reward_episode = []
             steps = 0
-            self.epsilon = max(0.05, self.epsilon - 0.00001)
-
+            self.epsilon = max(0.05, self.epsilon - 0.00016)
             s = self.env.reset()
             print("current_episode {}".format(episode))
             while steps < self.max_step:
@@ -84,8 +81,8 @@ class Runner_maddpg:
         plt.plot(range(1, len(returns)), returns[1:])
         plt.xlabel('evaluate num')
         plt.ylabel('average returns')
-        plt.savefig(self.save_path + '/train_return.png', format='png')
-        np.save(self.save_path + '/train_returns.pkl', returns)
+        plt.savefig(self.save_path + '/15_train_return.png', format='png')
+        np.save(self.save_path + '/15_train_returns.pkl', returns)
 
         fig, a = plt.subplots(2, 2)
         x = range(len(conflict_total))
@@ -95,8 +92,8 @@ class Runner_maddpg:
         a[0][1].set_title('exit_boundary_num')
         a[1][0].plot(x, success_total, 'r')
         a[1][0].set_title('success_num')
-        plt.savefig(self.save_path + '/train_metric.png', format='png')
-        np.save(self.save_path + '/train_returns.pkl', conflict_total)
+        plt.savefig(self.save_path + '/15_train_metric.png', format='png')
+        np.save(self.save_path + '/15_train_returns.pkl', conflict_total)
 
         plt.show()
 
@@ -164,16 +161,20 @@ class Runner_maddpg:
                 else:
                     break
 
-            if episode > 0 and episode % 10 == 0:
+            if episode > 0 and episode % 50 == 0:
                 self.env.render(mode='traj')
 
-            # plt.figure()
-            # plt.title('collision_value——time')
-            # x = range(len(self.env.collision_value))
-            # plt.plot(x, self.env.collision_value)
-            # plt.xlabel('timestep')
-            # plt.ylabel('collision_value')
-            # plt.savefig(self.save_path + '/collision_value/8_agent/' + str(episode) + 'collision_value.png', format='png')
+            plt.figure()
+            plt.title('collision_value——time')
+            x = range(len(self.env.collision_value))
+            plt.plot(x, self.env.collision_value)
+            plt.xlabel('timestep')
+            plt.ylabel('collision_value')
+            plt.savefig(self.save_path + '/collision_value/30_agent/' + str(episode) + 'collision_value.png',
+                        format='png')
+            np.save(self.save_path + '/collision_value/30_agent/' + str(episode) + 'collision_value.npy',
+                    self.env.collision_value)
+            plt.close()
 
             rewards = rewards / 1000
             returns.append(rewards)
@@ -192,18 +193,24 @@ class Runner_maddpg:
         plt.plot(range(1, len(returns)), returns[1:])
         plt.xlabel('evaluate num')
         plt.ylabel('average returns')
-        plt.savefig(self.save_path + '/8_duifeval_return.png', format='png')
+        # plt.savefig(self.save_path + '/30_eval_return.png', format='png')
 
         fig, a = plt.subplots(2, 2)
         x = range(len(conflict_total))
         ave_conflict = np.mean(conflict_total)
-        print("平均冲突", ave_conflict)
+        ave_success = np.mean(success_total)
+        ave_exit = np.mean(collide_wall_total)
+        zero_conflict = sum(np.array(conflict_total) == 0)
+        print("平均冲突数", ave_conflict)
+        print("平均成功率", ave_success / self.agent_num)
+        print("平均出界率", ave_exit / self.agent_num)
+        print("0冲突占比：", zero_conflict / len(conflict_total))
         a[0][0].plot(x, conflict_total, 'b')
         a[0][0].set_title('conflict_num')
         a[0][1].plot(x, collide_wall_total, 'y')
         a[0][1].set_title('exit_boundary_num')
         a[1][0].plot(x, success_total, 'r')
         a[1][0].set_title('success_num')
-        plt.savefig(self.save_path + '/8_eval_metric.png', format='png')
+        # plt.savefig(self.save_path + '/30_eval_metric.png', format='png')
 
         plt.show()

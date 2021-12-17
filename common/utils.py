@@ -1,7 +1,8 @@
 import numpy as np
 import inspect
 import functools
-
+import torch
+import logging
 
 def store_args(method):
     """Stores provided method args as instance attributes.
@@ -39,13 +40,18 @@ def make_env(args):
 
     # create world
     world = scenario.make_world()
+
+    device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "cpu")
+    logging.info('Using device: %s', device)
+    USE_CUDA = torch.cuda.is_available()
+    args.device = device
     # create multiagent environment
     if args.scenario_name == 'cr_grl':
         env = MultiAgentEnv_GRL(world, scenario.reset_world, scenario.reward)
     elif args.scenario_name == 'cr_maddpg':
         env = MultiAgentEnv_maddpg(world, scenario.reset_world, scenario.reward, args=args)
-    # else:
-    #     env = MultiAgentEnv_ppo(world, scenario.reset_world, scenario.reward)
+    else:
+        env = MultiAgentEnv_ppo(world, scenario.reset_world, scenario.reward, args=args)
     # env = MultiAgentEnv(world, scenario.reset_world, scenario.reward, scenario.observation)
     # 以下部分添加到MultiAgentEnv中
     args.n_agents = env.agent_num
