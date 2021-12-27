@@ -26,6 +26,7 @@ class Runner_maddpg:
         reward_total = []
         conflict_total = []
         collide_wall_total = []
+        nmac_total = []
         success_total = []
         start = time.time()
         for episode in range(self.args.num_episodes):
@@ -73,7 +74,9 @@ class Runner_maddpg:
                 conflict_total.append(info[0])
                 collide_wall_total.append(info[1])
                 success_total.append(info[2])
+                nmac_total.append(info[3])
             self.env.conflict_num_episode = 0
+            self.env.nmac_num_episode = 0
 
         end = time.time()
         print("花费时间", end - start)
@@ -92,6 +95,8 @@ class Runner_maddpg:
         a[0][1].set_title('exit_boundary_num')
         a[1][0].plot(x, success_total, 'r')
         a[1][0].set_title('success_num')
+        a[1][1].plot(x, nmac_total)
+        a[1][1].set_title('nmac_num')
         plt.savefig(self.save_path + '/15_train_metric.png', format='png')
         np.save(self.save_path + '/15_train_returns.pkl', conflict_total)
 
@@ -102,7 +107,9 @@ class Runner_maddpg:
         self.env.collision_num = 0
         self.env.exit_boundary_num = 0
         self.env.success_num = 0
+        self.env.nmac_num = 0
         returns = []
+        deviation = []
         for episode in range(self.args.evaluate_episodes):
             # reset the environment
             s = self.env.reset()
@@ -119,15 +126,19 @@ class Runner_maddpg:
                     rewards += sum(r)
                     s = s_next
                 else:
+                    dev = self.env.route_deviation_rate()
+                    deviation.append(np.mean(dev))
                     break
             rewards = rewards / 10000
             returns.append(rewards)
             print('Returns is', rewards)
         print("conflict num :", self.env.collision_num)
+        print("nmac num", self.env.nmac_num)
         print("exit boundary num：", self.env.exit_boundary_num)
         print("success num：", self.env.success_num)
+        print("路径平均偏差率：", np.mean(deviation))
 
-        return sum(returns) / self.args.evaluate_episodes, (self.env.collision_num, self.env.exit_boundary_num, self.env.success_num)
+        return sum(returns) / self.args.evaluate_episodes, (self.env.collision_num, self.env.exit_boundary_num, self.env.success_num, self.env.nmac_num)
 
     def evaluate_model(self):
         """
@@ -138,9 +149,12 @@ class Runner_maddpg:
         conflict_total = []
         collide_wall_total = []
         success_total = []
+        deviation = []
+        nmac_total = []
         self.env.collision_num = 0
         self.env.exit_boundary_num = 0
         self.env.success_num = 0
+        self.env.nmac_num = 0
         returns = []
         eval_episode = 100
         for episode in range(eval_episode):
@@ -159,35 +173,40 @@ class Runner_maddpg:
                     rewards += sum(r)
                     s = s_next
                 else:
+                    dev = self.env.route_deviation_rate()
+                    deviation.append(np.mean(dev))
                     break
 
             if episode > 0 and episode % 50 == 0:
                 self.env.render(mode='traj')
 
-            plt.figure()
-            plt.title('collision_value——time')
-            x = range(len(self.env.collision_value))
-            plt.plot(x, self.env.collision_value)
-            plt.xlabel('timestep')
-            plt.ylabel('collision_value')
-            plt.savefig(self.save_path + '/collision_value/30_agent/' + str(episode) + 'collision_value.png',
-                        format='png')
-            np.save(self.save_path + '/collision_value/30_agent/' + str(episode) + 'collision_value.npy',
-                    self.env.collision_value)
-            plt.close()
+            # plt.figure()
+            # plt.title('collision_value——time')
+            # x = range(len(self.env.collision_value))
+            # plt.plot(x, self.env.collision_value)
+            # plt.xlabel('timestep')
+            # plt.ylabel('collision_value')
+            # plt.savefig(self.save_path + '/collision_value/30_agent/' + str(episode) + 'collision_value.png',
+            #             format='png')
+            # np.save(self.save_path + '/collision_value/30_agent/' + str(episode) + 'collision_value.npy',
+            #         self.env.collision_value)
+            # plt.close()
 
             rewards = rewards / 1000
             returns.append(rewards)
             print('Returns is', rewards)
             print("conflict num :", self.env.collision_num)
+            print("nmac num：", self.env.nmac_num)
             print("exit boundary num：", self.env.exit_boundary_num)
             print("success num：", self.env.success_num)
             conflict_total.append(self.env.collision_num)
+            nmac_total.append(self.env.nmac_num)
             collide_wall_total.append(self.env.exit_boundary_num)
             success_total.append(self.env.success_num)
             self.env.collision_num = 0
             self.env.exit_boundary_num = 0
             self.env.success_num = 0
+            self.env.nmac_num = 0
 
         plt.figure()
         plt.plot(range(1, len(returns)), returns[1:])
@@ -198,19 +217,24 @@ class Runner_maddpg:
         fig, a = plt.subplots(2, 2)
         x = range(len(conflict_total))
         ave_conflict = np.mean(conflict_total)
+        ave_nmac = np.mean(nmac_total)
         ave_success = np.mean(success_total)
         ave_exit = np.mean(collide_wall_total)
         zero_conflict = sum(np.array(conflict_total) == 0)
         print("平均冲突数", ave_conflict)
+        print("平均NMAC数", ave_nmac)
         print("平均成功率", ave_success / self.agent_num)
         print("平均出界率", ave_exit / self.agent_num)
         print("0冲突占比：", zero_conflict / len(conflict_total))
+        print("平均偏差率", np.mean(deviation))
         a[0][0].plot(x, conflict_total, 'b')
         a[0][0].set_title('conflict_num')
         a[0][1].plot(x, collide_wall_total, 'y')
         a[0][1].set_title('exit_boundary_num')
         a[1][0].plot(x, success_total, 'r')
         a[1][0].set_title('success_num')
+        a[1][1].plot(x, nmac_total)
+        a[1][1].set_title('nmac_num')
         # plt.savefig(self.save_path + '/30_eval_metric.png', format='png')
 
         plt.show()

@@ -17,9 +17,9 @@ class Scenario(BaseScenario):
     def make_world(self):
         world = World()
         # set size of the world
-        world.set_world(-250, 250, -250, 250)
+        world.set_world(-160, 160, -160, 160)
         # set any world properties first
-        self.num_agents = 50
+        self.num_agents = 30
         self.num_landmarks = self.num_agents
         world.collaborative = True
         # make initial conditions

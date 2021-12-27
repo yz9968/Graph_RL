@@ -111,6 +111,7 @@ class Agent(Entity):
         self.policy = None
         self.done = 0  # 0：exist but no potential collision；1：reach_goal；2：exit_boundary ；3：exist but detect potential collision
         self.dist_to_goal = None
+        self.route_len = 0
         # agents are movable by default
         self.movable = True
         # cannot send communication signals
@@ -154,10 +155,14 @@ class Agent(Entity):
         self.sx = px
         self.sy = py
 
+    def get_dist_togoal(self):
+        return dist(Vector2(self.sx, self.sy), Vector2(self.gx, self.gy))
+
     def compute_position(self, action, delta_t):
         px = self.px + action.vx * delta_t
         py = self.py + action.vy * delta_t
-
+        d = dist(Vector2(self.px, self.py), Vector2(px, py))
+        self.route_len += d
         return px, py
 
     def step(self, action):
@@ -559,6 +564,7 @@ class Collision_Network():
         self.obs = obs
         self.agent_num = len(self.obs)
         self.cm = np.zeros((self.agent_num, self.agent_num), dtype='float32')
+        self.dm = np.zeros((self.agent_num, self.agent_num), dtype='float32')
 
     def collision_matrix(self):
         """
@@ -566,7 +572,7 @@ class Collision_Network():
         :return: collision_matrix
         """
         for i in range(self.agent_num):
-            if self.obs[i].done:
+            if self.obs[i].done == 1 or self.obs[i] == 2:
                 self.cm[i, :] = 0
                 self.cm[:, i] = 0
                 continue
@@ -588,3 +594,20 @@ class Collision_Network():
                 self.cm[j][i] = collision_value
 
         return self.cm
+
+    def dist_matrix(self):
+        for i in range(self.agent_num):
+            if self.obs[i].done == 1 or self.obs[i].done == 2:
+                self.dm[i, :] = inf
+                self.dm[:, i] = inf
+                continue
+            own_id = i
+            own_pos = Vector2(self.obs[i].px, self.obs[i].py)
+            for j in range(own_id + 1, self.agent_num):
+                other_id = j
+                other_pos = Vector2(self.obs[j].px, self.obs[j].py)
+                d = dist(own_pos, other_pos)
+                self.dm[i][j] = d
+                self.dm[j][i] = d
+
+        return self.dm

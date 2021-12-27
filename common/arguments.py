@@ -11,9 +11,9 @@ def get_args():
     # device setting
     parser.add_argument('--gpu', default=True, action='store_true')
     # Environment
-    parser.add_argument("--scenario-name", type=str, default="cr_grl", help="name of the scenario script")
+    parser.add_argument("--scenario-name", type=str, default="cr_ppo_lstm", help="name of the scenario script")
     # parser.add_argument("--scenario-name", type=str, default="collision_avoidance", help="name of the scenario script")
-    parser.add_argument("--max-episode-len", type=int, default=400, help="maximum time steps in an episode")
+    parser.add_argument("--max-episode-len", type=int, default=200, help="maximum time steps in an episode")
     parser.add_argument("--num-episodes", type=int, default=2001, help="number of train episodes")
     parser.add_argument("--time-steps", type=int, default=2000000, help="number of time steps")
     # Core training parameters
@@ -28,7 +28,7 @@ def get_args():
     parser.add_argument("--batch-size", type=int, default=128, help="number of episodes to optimize at the same time")
     # Checkpointing
     parser.add_argument("--save-dir", type=str, default="./model", help="directory in which training state and model should be saved")
-    parser.add_argument("--save-rate", type=int, default=5000, help="save model once every time this many timesteps are completed")
+    parser.add_argument("--save-rate", type=int, default=500, help="save model once every time this many timesteps are completed")
     parser.add_argument("--model-dir", type=str, default="", help="directory in which training state and model are loaded")
 
     # Evaluate

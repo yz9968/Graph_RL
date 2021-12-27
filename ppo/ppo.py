@@ -84,10 +84,10 @@ class PPO:
         if not os.path.exists(self.model_path):
             os.mkdir(self.model_path)
 
-        self.actor_model_name = '/50_actor_params.pkl'
-        self.critic_model_name = '/50_critic_params.pkl'
+        self.actor_model_name = '/30_actor_params.pkl'
+        self.critic_model_name = '/30_critic_params.pkl'
         # 加载模型
-        if self.training_step % 10000 == 0 and self.training_step > 0:
+        if self.training_step % 500 == 0 and self.training_step > 0:
             if os.path.exists(self.model_path + self.actor_model_name):
                 self.actor_network.load_state_dict(torch.load(self.model_path + self.actor_model_name))
                 self.critic_network.load_state_dict(torch.load(self.model_path + self.critic_model_name))
@@ -131,7 +131,6 @@ class PPO:
         # reward = torch.tensor([t.reward for t in self.buffer], dtype=torch.float).view(-1, 1)
         # next_state = torch.tensor([t.next_state for t in self.buffer], dtype=torch.float)
         old_action_log_prob = torch.tensor([t.a_log_prob for t in self.buffer], dtype=torch.float).view(-1, 1)
-
         R = 0
         Gt = []
         for r in reward[::-1]:

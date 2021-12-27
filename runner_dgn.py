@@ -54,6 +54,7 @@ class Runner_DGN:
         conflict_total = []
         collide_wall_total = []
         success_total = []
+        nmac_total = []
         start_episode = 100
         start = time.time()
         episode = -1
@@ -104,7 +105,9 @@ class Runner_DGN:
                 conflict_total.append(info[0])
                 collide_wall_total.append(info[1])
                 success_total.append(info[2])
+                nmac_total.append(info[3])
             self.env.conflict_num_episode = 0
+            self.env.nmac_num_episode = 0
 
             if episode < start_episode:
                 continue
@@ -159,6 +162,8 @@ class Runner_DGN:
         a[0][1].set_title('exit_boundary_num')
         a[1][0].plot(x, success_total, 'r')
         a[1][0].set_title('success_num')
+        a[1][1].plot(x, nmac_total)
+        a[1][1].set_title('nmac_num')
         plt.savefig(self.save_path + '/50_agent/train_metric_new.png', format='png')
         plt.show()
 
@@ -167,7 +172,9 @@ class Runner_DGN:
         self.env.collision_num = 0
         self.env.exit_boundary_num = 0
         self.env.success_num = 0
+        self.env.nmac_num = 0
         returns = []
+        deviation = []
         for episode in range(self.args.evaluate_episodes):
             # reset the environment
             obs, adj = self.env.reset()
@@ -187,16 +194,20 @@ class Runner_DGN:
                     obs = next_obs
                     adj = next_adj
                 else:
+                    dev = self.env.route_deviation_rate()
+                    deviation.append(np.mean(dev))
                     break
 
             rewards = rewards / 10000
             returns.append(rewards)
             print('Returns is', rewards)
         print("conflict num :", self.env.collision_num)
+        print("nmac num :", self.env.nmac_num)
         print("exit boundary num：", self.env.exit_boundary_num)
         print("success num：", self.env.success_num)
+        print("路径平均偏差率：", np.mean(deviation))
 
-        return sum(returns) / self.args.evaluate_episodes, (self.env.collision_num, self.env.exit_boundary_num, self.env.success_num)
+        return sum(returns) / self.args.evaluate_episodes, (self.env.collision_num, self.env.exit_boundary_num, self.env.success_num, self.env.nmac_num)
 
     def evaluate_model(self):
         """
@@ -207,7 +218,10 @@ class Runner_DGN:
         conflict_total = []
         collide_wall_total = []
         success_total = []
+        nmac_total = []
+        deviation = []
         self.env.collision_num = 0
+        self.env.nmac_num = 0
         self.env.exit_boundary_num = 0
         self.env.success_num = 0
         returns = []
@@ -231,6 +245,8 @@ class Runner_DGN:
                     obs = next_obs
                     adj = next_adj
                 else:
+                    dev = self.env.route_deviation_rate()
+                    deviation.append(np.mean(dev))
                     break
 
             if episode > 0 and episode % 50 == 0:
@@ -252,12 +268,15 @@ class Runner_DGN:
             returns.append(rewards)
             print('Returns is', rewards)
             print("conflict num :", self.env.collision_num)
+            print("nmac num：", self.env.nmac_num)
             print("exit boundary num：", self.env.exit_boundary_num)
             print("success num：", self.env.success_num)
             conflict_total.append(self.env.collision_num)
+            nmac_total.append(self.env.nmac_num)
             collide_wall_total.append(self.env.exit_boundary_num)
             success_total.append(self.env.success_num)
             self.env.collision_num = 0
+            self.env.nmac_num = 0
             self.env.exit_boundary_num = 0
             self.env.success_num = 0
 
@@ -270,19 +289,24 @@ class Runner_DGN:
         fig, a = plt.subplots(2, 2)
         x = range(len(conflict_total))
         ave_conflict = np.mean(conflict_total)
+        ave_nmac = np.mean(nmac_total)
         ave_success = np.mean(success_total)
         ave_exit = np.mean(collide_wall_total)
         zero_conflict = sum(np.array(conflict_total) == 0)
         print("平均冲突数", ave_conflict)
+        print("平均NMAC数", ave_nmac)
         print("平均成功率", ave_success / self.agent_num)
         print("平均出界率", ave_exit / self.agent_num)
         print("0冲突占比：", zero_conflict / len(conflict_total))
+        print("平均偏差率", np.mean(deviation))
         a[0][0].plot(x, conflict_total, 'b')
         a[0][0].set_title('conflict_num')
         a[0][1].plot(x, collide_wall_total, 'y')
         a[0][1].set_title('exit_boundary_num')
         a[1][0].plot(x, success_total, 'r')
         a[1][0].set_title('success_num')
-        # plt.savefig(self.save_path + '/30_agent/eval_metric_new.png', format='png')
+        a[1][1].plot(x, nmac_total)
+        a[1][1].set_title('nmac_num')
+        # plt.savefig(self.save_path + '/30_agent/eval_metric1.png', format='png')
 
         plt.show()
