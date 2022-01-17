@@ -31,11 +31,10 @@ class Runner_maddpg:
         start = time.time()
         for episode in range(self.args.num_episodes):
             reward_episode = []
-            steps = 0
             self.epsilon = max(0.05, self.epsilon - 0.00016)
             s = self.env.reset()
             print("current_episode {}".format(episode))
-            while steps < self.max_step:
+            for steps in range(self.max_step):
                 self.noise = max(0.05, self.noise - 0.0000005)
                 if not self.env.simulation_done:
                     actions = []
@@ -84,8 +83,8 @@ class Runner_maddpg:
         plt.plot(range(1, len(returns)), returns[1:])
         plt.xlabel('evaluate num')
         plt.ylabel('average returns')
-        plt.savefig(self.save_path + '/15_train_return.png', format='png')
-        np.save(self.save_path + '/15_train_returns.pkl', returns)
+        plt.savefig(self.save_path + '/35_train_return.png', format='png')
+        np.save(self.save_path + '/35_train_returns.pkl', returns)
 
         fig, a = plt.subplots(2, 2)
         x = range(len(conflict_total))
@@ -97,8 +96,8 @@ class Runner_maddpg:
         a[1][0].set_title('success_num')
         a[1][1].plot(x, nmac_total)
         a[1][1].set_title('nmac_num')
-        plt.savefig(self.save_path + '/15_train_metric.png', format='png')
-        np.save(self.save_path + '/15_train_returns.pkl', conflict_total)
+        plt.savefig(self.save_path + '/35_train_metric.png', format='png')
+        np.save(self.save_path + '/35_train_returns.pkl', conflict_total)
 
         plt.show()
 

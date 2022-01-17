@@ -56,6 +56,7 @@ class DGN(nn.Module):
 		self.att_2 = AttModel(n_agent,hidden_dim,hidden_dim,hidden_dim)
 		self.q_net = Q_Net(hidden_dim,num_actions)
 		# q : size ()
+
 	def forward(self, x, mask):
 		h1 = self.encoder(x)
 		h2 = self.att_1(h1, mask)

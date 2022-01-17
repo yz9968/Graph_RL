@@ -226,6 +226,14 @@ class Agent(Entity):
         self.v_intent = (vx, vy, theta)
         return self.v_intent
 
+    def angle_intent_current_v(self):
+        """
+        :return: angle between current v and intention v
+        """
+        intent = self.get_intention_v()
+        angle = compute_angle(Vector2(intent[0], intent[1]), Vector2(self.vx, self.vy))
+        return angle
+
     def set_intent_v(self, velocity):
         """
         :param velocity: (vx, vy, theta)
@@ -494,7 +502,6 @@ class Collision_Detection():
             mid = 1
         if mid < -1:
             mid = -1
-        # print("matmul(vr,AB) / mod", mid)
         self.gamma = acos(mid)
         self.L_low = None
 

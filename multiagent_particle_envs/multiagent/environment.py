@@ -353,6 +353,7 @@ class MultiAgentEnv_GRL(MultiAgentEnv):
         self.agent_times = [0 for _ in range(self.agent_num)]
         self.collision_value = []
         self.states = []
+        self.actions_total = []
         self.states.append(obs)
         cnet = Collision_Network(obs)
         adj = cnet.collision_matrix()
@@ -365,6 +366,7 @@ class MultiAgentEnv_GRL(MultiAgentEnv):
         :param actions: [0, 1, 2, 1, 2]
         :return:
         """
+        self.actions_total.append(actions)
         done_signals = []
         for i in range(self.agent_num):
             done_signals.append(0)
@@ -445,13 +447,14 @@ class MultiAgentEnv_GRL(MultiAgentEnv):
             if agent.done != 1 and agent.done != 2:
                 collision_value_row = collision_mat[i]
                 d = dist_mat[i]
-                self.collision_num += sum(collision_value_row == 1)
-                self.conflict_num_episode += sum(collision_value_row == 1)
-                self.nmac_num += sum(d <= self.nmac_size)
-                self.nmac_num_episode += sum(d <= self.nmac_size)
+                self.collision_num += sum(collision_value_row == 1) / 2
+                self.conflict_num_episode += sum(collision_value_row == 1) / 2
+                self.nmac_num += sum(d <= self.nmac_size) / 2
+                self.nmac_num_episode += sum(d <= self.nmac_size) / 2
                 # # no collision resolution
                 # agent.done = 0
-                if np.sum(collision_value_row) == 0:
+                # print("sum collision_value", np.sum(collision_value_row))
+                if np.sum(collision_value_row) <= 0.2:
                     agent.done = 0
                 else:
                     agent.done = 3
@@ -727,16 +730,17 @@ class MultiAgentEnv_maddpg(MultiAgentEnv):
             if agent.done != 1 and agent.done != 2:
                 collision_value_row = collision_mat[i]
                 d = dist_mat[i]
-                self.collision_num += sum(collision_value_row == 1)
-                self.conflict_num_episode += sum(collision_value_row == 1)
-                self.nmac_num += sum(d <= self.nmac_size)
-                self.nmac_num_episode += sum(d <= self.nmac_size)
+                self.collision_num += sum(collision_value_row == 1) / 2
+                self.conflict_num_episode += sum(collision_value_row == 1) / 2
+                self.nmac_num += sum(d <= self.nmac_size) / 2
+                self.nmac_num_episode += sum(d <= self.nmac_size) / 2
                 # # no collision resolution
                 # agent.done = 0
-                if np.sum(collision_value_row) == 0:
+                if np.sum(collision_value_row) <= 0.2:
                     agent.done = 0
                 else:
                     agent.done = 3
+
 
         # compute reward
         reward, c_v = self.reward_callback(self.world, collision_mat, Reach_Goal, Exit_Boundary, dist_to_goal)
@@ -931,7 +935,6 @@ class MultiAgentEnv_ppo(MultiAgentEnv):
         done_signals = []
         for i in range(self.agent_num):
             done_signals.append(0)
-
         # update agents pos
         for i, agent in enumerate(self.agents):
             # no potential collision
@@ -1008,13 +1011,13 @@ class MultiAgentEnv_ppo(MultiAgentEnv):
             if agent.done != 1 and agent.done != 2:
                 collision_value_row = collision_mat[i]
                 d = dist_mat[i]
-                self.collision_num += sum(collision_value_row == 1)
-                self.conflict_num_episode += sum(collision_value_row == 1)
-                self.nmac_num += sum(d <= self.nmac_size)
-                self.nmac_num_episode += sum(d <= self.nmac_size)
+                self.collision_num += sum(collision_value_row == 1) / 2
+                self.conflict_num_episode += sum(collision_value_row == 1) / 2
+                self.nmac_num += sum(d <= self.nmac_size) / 2
+                self.nmac_num_episode += sum(d <= self.nmac_size) / 2
                 # # no collision resolution
                 # agent.done = 0
-                if np.sum(collision_value_row) == 0:
+                if np.sum(collision_value_row) <= 0.01:
                     agent.done = 0
                 else:
                     agent.done = 3
@@ -1320,10 +1323,10 @@ class MultiAgentEnv_ppo_cnn(MultiAgentEnv):
             if agent.done != 1 and agent.done != 2:
                 collision_value_row = collision_mat[i]
                 d = dist_mat[i]
-                self.collision_num += sum(collision_value_row == 1)
-                self.conflict_num_episode += sum(collision_value_row == 1)
-                self.nmac_num += sum(d <= self.nmac_size)
-                self.nmac_num_episode += sum(d <= self.nmac_size)
+                self.collision_num += sum(collision_value_row == 1) / 2
+                self.conflict_num_episode += sum(collision_value_row == 1) / 2
+                self.nmac_num += sum(d <= self.nmac_size) / 2
+                self.nmac_num_episode += sum(d <= self.nmac_size) / 2
                 # # no collision resolution
                 # agent.done = 0
                 if np.sum(collision_value_row) == 0:
@@ -1604,10 +1607,10 @@ class MultiAgentEnv_ppo_lstm(MultiAgentEnv):
             if agent.done != 1 and agent.done != 2:
                 collision_value_row = collision_mat[i]
                 d = dist_mat[i]
-                self.collision_num += sum(collision_value_row == 1)
-                self.conflict_num_episode += sum(collision_value_row == 1)
-                self.nmac_num += sum(d <= self.nmac_size)
-                self.nmac_num_episode += sum(d <= self.nmac_size)
+                self.collision_num += sum(collision_value_row == 1) / 2
+                self.conflict_num_episode += sum(collision_value_row == 1) / 2
+                self.nmac_num += sum(d <= self.nmac_size) / 2
+                self.nmac_num_episode += sum(d <= self.nmac_size) / 2
                 # # no collision resolution
                 # agent.done = 0
                 if np.sum(collision_value_row) == 0:

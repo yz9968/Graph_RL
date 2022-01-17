@@ -3,6 +3,7 @@ from numpy.linalg import norm
 from multiagent_particle_envs.multiagent.core import World, Agent, Landmark
 from multiagent_particle_envs.multiagent.scenario import BaseScenario
 from multiagent_particle_envs.multiagent.core import *
+import math
 
 # 图强化学习环境
 
@@ -13,6 +14,8 @@ class Scenario(BaseScenario):
         self.collision_level2 = -1.0
         self.collision_penalty = -10.0
         self.dist_to_goal_penalty = -1.0
+        self.time_penalty = -0.5
+        self.angle_dev = 2.0
         self.exit_boundary = -10.0
 
     def make_world(self):
@@ -20,7 +23,7 @@ class Scenario(BaseScenario):
         # set size of the world
         world.set_world(-160, 160, -160, 160)
         # set any world properties first
-        self.num_agents = 30
+        self.num_agents = 50
         self.num_landmarks = self.num_agents
         world.collaborative = True
         # make initial conditions
@@ -152,14 +155,23 @@ class Scenario(BaseScenario):
                 reward.append(0)
             else:
                 collision_value_row = collision_mat[i]
+                angle = agent.angle_intent_current_v()
                 r1 = sum(np.logical_and(collision_value_row > 0, collision_value_row <= 0.5)) * self.collision_level1
                 r2 = sum(np.logical_and(collision_value_row > 0.5, collision_value_row < 1)) * self.collision_level2
                 r3 = sum(collision_value_row == 1) * self.collision_penalty
+                r4 = (math.cos(angle) - 1) * self.angle_dev
                 # r4 = delta_dist_to_goal[i] * self.head_goal_reward
-                r4 = dist_to_goal[i] * self.dist_to_goal_penalty
-                # self.conflict_num += sum(collision_value_row == 1)
+                # r4 = dist_to_goal[i] * self.dist_to_goal_penalty
                 r = r1 + r2 + r3 + r4
-                c_v = -r1 - r2 + sum(collision_value_row == 1) * 2.0
+                # collision_value compute
+                c1 = np.logical_and(collision_value_row > 0, collision_value_row <= 0.5)
+                c1 = np.where(c1)[0]
+                c2 = np.logical_and(collision_value_row > 0.5, collision_value_row < 1)
+                c2 = np.where(c2)[0]
+                v1 = sum(np.take(collision_value_row, c1)) * -self.collision_level1
+                v2 = sum(np.take(collision_value_row, c2)) * -self.collision_level2
+                v3 = sum(collision_value_row == 1) * 2.0
+                c_v = v1 + v2 + v3
                 reward.append(r)
         return reward, c_v
 

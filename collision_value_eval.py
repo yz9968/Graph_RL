@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 
 dir = "C:\\Users\\lenovo\\PycharmProjects\\project\\GRL\\model\\"
 
-maddpg_dir = dir + "cr_maddpg\\collision_value\\30_agent\\" + "73collision_value.npy"
-ppo_dir = dir + "cr_ppo\\collision_value\\30_agent\\" + "20collision_value.npy"
-grl_dir = dir + "cr_grl\\30_agent\\collision_value\\" + "68collision_value.npy"
+maddpg_dir = dir + "cr_maddpg\\collision_value\\30_agent\\" + "86collision_value.npy"
+ppo_dir = dir + "cr_ppo\\collision_value\\30_agent\\" + "60collision_value.npy"
+grl_dir = dir + "cr_grl\\30_agent\\collision_value\\" + "78collision_value.npy"
 
 maddpg = np.load(maddpg_dir).tolist()
 ppo = np.load(ppo_dir).tolist()

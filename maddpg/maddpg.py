@@ -37,17 +37,17 @@ class MADDPG:
         if not os.path.exists(self.model_path):
             os.mkdir(self.model_path)
 
-
-        self.actor_model_name = '/30_actor_params.pkl'
-        self.critic_model_name = '/30_critic_params.pkl'
+        self.actor_model_name = '/50_actor_params.pkl'
+        self.critic_model_name = '/50_critic_params.pkl'
         # 加载模型
         if os.path.exists(self.model_path + self.actor_model_name):
             self.actor_network.load_state_dict(torch.load(self.model_path + self.actor_model_name))
             self.critic_network.load_state_dict(torch.load(self.model_path + self.critic_model_name))
-            print('Agent {} successfully loaded actor_network: {}'.format(self.agent_id,
-                                                                          self.model_path + self.actor_model_name))
-            print('Agent {} successfully loaded critic_network: {}'.format(self.agent_id,
-                                                                           self.model_path + self.critic_model_name))
+            # print('Agent {} successfully loaded network'.format(self.agent_id))
+            # print('Agent {} successfully loaded actor_network: {}'.format(self.agent_id,
+            #                                                               self.model_path + self.actor_model_name))
+            # print('Agent {} successfully loaded critic_network: {}'.format(self.agent_id,
+            #                                                                self.model_path + self.critic_model_name))
 
     # soft update
     def _soft_update_target_network(self):

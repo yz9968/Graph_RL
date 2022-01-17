@@ -30,11 +30,10 @@ class Runner_PPO:
         start = time.time()
         for episode in range(self.args.num_episodes):
             reward_episode = []
-            steps = 0
             self.epsilon = max(0.05, self.epsilon - 0.00016)
             s = self.env.reset()
             print("current_episode {}".format(episode))
-            while steps < self.max_step:
+            for steps in range(self.max_step):
                 if not self.env.simulation_done:
                     actions = []
                     action_probs = []
@@ -42,7 +41,6 @@ class Runner_PPO:
                         action, action_prob = agent.policy.select_action(s[i])
                         actions.append(action)
                         action_probs.append(action_prob)
-
                     s_next, r, done, info = self.env.step(actions)
                     for i, agent in enumerate(self.agents):
                         trans = Transition(s[i], actions[i], action_probs[i], r[i], s_next[i])
@@ -79,8 +77,8 @@ class Runner_PPO:
         plt.plot(range(1, len(returns)), returns[1:])
         plt.xlabel('evaluate num')
         plt.ylabel('average returns')
-        # plt.savefig(self.save_path + '/8_train_return.png', format='png')
-        # np.save(self.save_path + '/8_train_returns', returns)
+        plt.savefig(self.save_path + '/35_train_return.png', format='png')
+        np.save(self.save_path + '/35_train_returns', returns)
 
         fig, a = plt.subplots(2, 2)
         x = range(len(conflict_total))
@@ -92,8 +90,8 @@ class Runner_PPO:
         a[1][0].set_title('success_num')
         a[1][1].plot(x, nmac_total)
         a[1][1].set_title('nmac_num')
-        # plt.savefig(self.save_path + '/8_train_metric.png', format='png')
-        # np.save(self.save_path + '/8_train_returns', conflict_total)
+        plt.savefig(self.save_path + '/35_train_metric.png', format='png')
+        np.save(self.save_path + '/35_train_returns', conflict_total)
 
         plt.show()
 
@@ -162,6 +160,7 @@ class Runner_PPO:
                     for agent_id, agent in enumerate(self.agents):
                         action, action_prob = agent.policy.select_action(s[agent_id])
                         actions.append(action)
+                        # print("agent {} action {}".format(agent_id, action))
                     s_next, r, done, info = self.env.step(actions)
                     rewards += sum(r)
                     s = s_next
@@ -173,15 +172,15 @@ class Runner_PPO:
             if episode > 0 and episode % 50 == 0:
                 self.env.render(mode='traj')
 
-            # plt.figure()
-            # plt.title('collision_value——time')
-            # x = range(len(self.env.collision_value))
-            # plt.plot(x, self.env.collision_value)
-            # plt.xlabel('timestep')
-            # plt.ylabel('collision_value')
-            # plt.savefig(self.save_path + '/collision_value/30_agent/' + str(episode) + 'collision_value.png', format='png')
-            # np.save(self.save_path + '/collision_value/30_agent/' + str(episode) + 'collision_value.npy', self.env.collision_value)
-            # plt.close()
+            plt.figure()
+            plt.title('collision_value——time')
+            x = range(len(self.env.collision_value))
+            plt.plot(x, self.env.collision_value)
+            plt.xlabel('timestep')
+            plt.ylabel('collision_value')
+            plt.savefig(self.save_path + '/collision_value/30_agent/' + str(episode) + 'collision_value.png', format='png')
+            np.save(self.save_path + '/collision_value/30_agent/' + str(episode) + 'collision_value.npy', self.env.collision_value)
+            plt.close()
 
             rewards = rewards / 1000
             returns.append(rewards)

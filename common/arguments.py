@@ -11,10 +11,10 @@ def get_args():
     # device setting
     parser.add_argument('--gpu', default=True, action='store_true')
     # Environment
-    parser.add_argument("--scenario-name", type=str, default="cr_ppo_lstm", help="name of the scenario script")
+    parser.add_argument("--scenario-name", type=str, default="cr_grl", help="name of the scenario script")
     # parser.add_argument("--scenario-name", type=str, default="collision_avoidance", help="name of the scenario script")
     parser.add_argument("--max-episode-len", type=int, default=200, help="maximum time steps in an episode")
-    parser.add_argument("--num-episodes", type=int, default=2001, help="number of train episodes")
+    parser.add_argument("--num-episodes", type=int, default=5001, help="number of train episodes")
     parser.add_argument("--time-steps", type=int, default=2000000, help="number of time steps")
     # Core training parameters
     parser.add_argument("--lr-actor", type=float, default=1e-4, help="learning rate of actor")
@@ -25,7 +25,7 @@ def get_args():
     parser.add_argument("--gamma", type=float, default=0.99, help="discount factor")
     parser.add_argument("--tau", type=float, default=0.01, help="parameter for updating the target network")
     parser.add_argument("--buffer-size", type=int, default=int(5e5), help="number of transitions can be stored in buffer")
-    parser.add_argument("--batch-size", type=int, default=128, help="number of episodes to optimize at the same time")
+    parser.add_argument("--batch-size", type=int, default=64, help="number of episodes to optimize at the same time")
     # Checkpointing
     parser.add_argument("--save-dir", type=str, default="./model", help="directory in which training state and model should be saved")
     parser.add_argument("--save-rate", type=int, default=500, help="save model once every time this many timesteps are completed")

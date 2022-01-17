@@ -86,15 +86,28 @@ class PPO:
 
         self.actor_model_name = '/30_actor_params.pkl'
         self.critic_model_name = '/30_critic_params.pkl'
+
+
         # 加载模型
-        if self.training_step % 500 == 0 and self.training_step > 0:
+        if os.path.exists(self.model_path + self.actor_model_name) and self.training_step == 0:
+            self.actor_network.load_state_dict(torch.load(self.model_path + self.actor_model_name))
+            self.critic_network.load_state_dict(torch.load(self.model_path + self.critic_model_name))
+            # print('Agent {} successfully loaded network'.format(self.agent_id))
+            # print('Agent {} successfully loaded actor_network: {}'.format(self.agent_id,
+            #                                                               self.model_path + self.actor_model_name))
+            # print('Agent {} successfully loaded critic_networkwork: {}'.format(self.agent_id,
+            #                                                                    self.model_path + self.critic_model_name))
+
+
+        if self.training_step % 500 == 0 and self.training_step >= 500:
             if os.path.exists(self.model_path + self.actor_model_name):
                 self.actor_network.load_state_dict(torch.load(self.model_path + self.actor_model_name))
                 self.critic_network.load_state_dict(torch.load(self.model_path + self.critic_model_name))
-                print('Agent {} successfully loaded actor_network: {}'.format(self.agent_id,
-                                                                              self.model_path + self.actor_model_name))
-                print('Agent {} successfully loaded critic_networkwork: {}'.format(self.agent_id,
-                                                                               self.model_path + self.critic_model_name))
+                print('Agent {} successfully loaded network'.format(self.agent_id))
+                # print('Agent {} successfully loaded actor_network: {}'.format(self.agent_id,
+                #                                                               self.model_path + self.actor_model_name))
+                # print('Agent {} successfully loaded critic_networkwork: {}'.format(self.agent_id,
+                #                                                                self.model_path + self.critic_model_name))
 
     def select_action(self, state):
         state = torch.from_numpy(state).float().unsqueeze(0).to(device)
