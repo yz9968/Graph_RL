@@ -736,7 +736,7 @@ class MultiAgentEnv_maddpg(MultiAgentEnv):
                 self.nmac_num_episode += sum(d <= self.nmac_size) / 2
                 # # no collision resolution
                 # agent.done = 0
-                if np.sum(collision_value_row) <= 0.2:
+                if np.sum(collision_value_row) <= 0.05:
                     agent.done = 0
                 else:
                     agent.done = 3
@@ -1017,7 +1017,7 @@ class MultiAgentEnv_ppo(MultiAgentEnv):
                 self.nmac_num_episode += sum(d <= self.nmac_size) / 2
                 # # no collision resolution
                 # agent.done = 0
-                if np.sum(collision_value_row) <= 0.01:
+                if np.sum(collision_value_row) <= 0.05:
                     agent.done = 0
                 else:
                     agent.done = 3

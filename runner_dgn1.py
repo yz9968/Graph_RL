@@ -39,7 +39,7 @@ class Runner_DGN1:
         self.save_path = self.args.save_dir + '/' + self.args.scenario_name
         if not os.path.exists(self.save_path):
             os.makedirs(self.save_path)
-        self.model_name = '/50_agent/50_graph_rl_weight2.pth'
+        self.model_name = '/20_agent/20_graph_rl_weight2.pth'
         if os.path.exists(self.save_path + self.model_name):
             self.model.load_state_dict(torch.load(self.save_path + self.model_name))
             print("successfully load model: {}".format(self.model_name))
@@ -228,7 +228,7 @@ class Runner_DGN1:
         self.env.exit_boundary_num = 0
         self.env.success_num = 0
         returns = []
-        eval_episode = 180
+        eval_episode = 100
         for episode in range(eval_episode):
             # reset the environment
             obs, adj = self.env.reset()

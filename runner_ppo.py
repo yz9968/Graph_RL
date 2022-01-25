@@ -172,15 +172,15 @@ class Runner_PPO:
             if episode > 0 and episode % 50 == 0:
                 self.env.render(mode='traj')
 
-            plt.figure()
-            plt.title('collision_value——time')
-            x = range(len(self.env.collision_value))
-            plt.plot(x, self.env.collision_value)
-            plt.xlabel('timestep')
-            plt.ylabel('collision_value')
-            plt.savefig(self.save_path + '/collision_value/30_agent/' + str(episode) + 'collision_value.png', format='png')
-            np.save(self.save_path + '/collision_value/30_agent/' + str(episode) + 'collision_value.npy', self.env.collision_value)
-            plt.close()
+            # plt.figure()
+            # plt.title('collision_value——time')
+            # x = range(len(self.env.collision_value))
+            # plt.plot(x, self.env.collision_value)
+            # plt.xlabel('timestep')
+            # plt.ylabel('collision_value')
+            # plt.savefig(self.save_path + '/collision_value/30_agent/' + str(episode) + 'collision_value.png', format='png')
+            # np.save(self.save_path + '/collision_value/30_agent/' + str(episode) + 'collision_value.npy', self.env.collision_value)
+            # plt.close()
 
             rewards = rewards / 1000
             returns.append(rewards)
@@ -204,6 +204,20 @@ class Runner_PPO:
         plt.ylabel('average returns')
         # plt.savefig(self.save_path + '/8_eval_return.png', format='png')
 
+        # conflict num process
+        conflict_total_1 = []
+        nmac_total_1 = []
+        for i in range(len(conflict_total)):
+            if success_total[i] + collide_wall_total[i] == self.agent_num:
+                conflict_total_1.append(conflict_total[i])
+                nmac_total_1.append(nmac_total[i])
+
+        y = range(len(conflict_total))
+        conflict_total = conflict_total_1
+        nmac_total = nmac_total_1
+        x = range(len(conflict_total))
+        print("有效轮数：", len(x))
+
         fig, a = plt.subplots(2, 2)
         x = range(len(conflict_total))
         ave_conflict = np.mean(conflict_total)
@@ -219,9 +233,9 @@ class Runner_PPO:
         print("平均偏差率", np.mean(deviation))
         a[0][0].plot(x, conflict_total, 'b')
         a[0][0].set_title('conflict_num')
-        a[0][1].plot(x, collide_wall_total, 'y')
+        a[0][1].plot(y, collide_wall_total, 'y')
         a[0][1].set_title('exit_boundary_num')
-        a[1][0].plot(x, success_total, 'r')
+        a[1][0].plot(y, success_total, 'r')
         a[1][0].set_title('success_num')
         a[1][1].plot(x, nmac_total)
         a[1][1].set_title('nmac_num')
