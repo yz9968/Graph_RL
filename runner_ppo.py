@@ -77,8 +77,8 @@ class Runner_PPO:
         plt.plot(range(1, len(returns)), returns[1:])
         plt.xlabel('evaluate num')
         plt.ylabel('average returns')
-        plt.savefig(self.save_path + '/35_train_return.png', format='png')
-        np.save(self.save_path + '/35_train_returns', returns)
+        # plt.savefig(self.save_path + '/35_train_return.png', format='png')
+        # np.save(self.save_path + '/35_train_returns', returns)
 
         fig, a = plt.subplots(2, 2)
         x = range(len(conflict_total))
@@ -90,8 +90,8 @@ class Runner_PPO:
         a[1][0].set_title('success_num')
         a[1][1].plot(x, nmac_total)
         a[1][1].set_title('nmac_num')
-        plt.savefig(self.save_path + '/35_train_metric.png', format='png')
-        np.save(self.save_path + '/35_train_returns', conflict_total)
+        # plt.savefig(self.save_path + '/35_train_metric.png', format='png')
+        # np.save(self.save_path + '/35_train_returns', conflict_total)
 
         plt.show()
 
@@ -166,7 +166,8 @@ class Runner_PPO:
                     s = s_next
                 else:
                     dev = self.env.route_deviation_rate()
-                    deviation.append(np.mean(dev))
+                    if dev:
+                        deviation.append(np.mean(dev))
                     break
 
             if episode > 0 and episode % 50 == 0:

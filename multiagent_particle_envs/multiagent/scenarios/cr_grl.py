@@ -23,7 +23,7 @@ class Scenario(BaseScenario):
         # set size of the world
         world.set_world(-160, 160, -160, 160)
         # set any world properties first
-        self.num_agents = 20
+        self.num_agents = 35
         self.num_landmarks = self.num_agents
         world.collaborative = True
         # make initial conditions
@@ -58,7 +58,9 @@ class Scenario(BaseScenario):
             world.agents[i].set(px, py, gx, gy, vx, vy, theta)
             world.agents[i].set_time_step(world.dt)
 
-    def generate_random_agent_attribute(self, world, agent_id):
+    def generate_random_agent_attribute(self, world, agent_id, episode = 0):
+        # 固定场景
+        np.random.seed(episode)
         square_width = world.boundary[1]
         if np.random.random() > 0.5:
             sign = -1

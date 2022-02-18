@@ -112,6 +112,7 @@ class Agent(Entity):
         self.done = 0  # 0：exist but no potential collision；1：reach_goal；2：exit_boundary ；3：exist but detect potential collision
         self.dist_to_goal = None
         self.route_len = 0
+        self.conflict = False
         # agents are movable by default
         self.movable = True
         # cannot send communication signals

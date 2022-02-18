@@ -333,11 +333,13 @@ class MultiAgentEnv_GRL(MultiAgentEnv):
 
     def route_deviation_rate(self):
         deviation_rates = []
+        # only for no conflict flight
         for i, agent in enumerate(self.agents):
-            d0 = agent.get_dist_togoal()
-            d1 = agent.route_len
-            deviation_rate = (d1 - d0) / d0
-            deviation_rates.append(deviation_rate)
+            if not agent.conflict:
+                d0 = agent.get_dist_togoal()
+                d1 = agent.route_len
+                deviation_rate = (d1 - d0) / d0
+                deviation_rates.append(deviation_rate)
         return deviation_rates
 
     def reset(self):
@@ -448,13 +450,15 @@ class MultiAgentEnv_GRL(MultiAgentEnv):
                 collision_value_row = collision_mat[i]
                 d = dist_mat[i]
                 self.collision_num += sum(collision_value_row == 1) / 2
+                if sum(collision_value_row == 1) / 2 != 0:
+                    agent.conflict = True
                 self.conflict_num_episode += sum(collision_value_row == 1) / 2
                 self.nmac_num += sum(d <= self.nmac_size) / 2
                 self.nmac_num_episode += sum(d <= self.nmac_size) / 2
                 # # no collision resolution
                 # agent.done = 0
                 # print("sum collision_value", np.sum(collision_value_row))
-                if np.sum(collision_value_row) <= 0.2:
+                if np.sum(collision_value_row) <= 0.05:
                     agent.done = 0
                 else:
                     agent.done = 3
@@ -617,11 +621,13 @@ class MultiAgentEnv_maddpg(MultiAgentEnv):
 
     def route_deviation_rate(self):
         deviation_rates = []
+        # only for no conflict flight
         for i, agent in enumerate(self.agents):
-            d0 = agent.get_dist_togoal()
-            d1 = agent.route_len
-            deviation_rate = (d1 - d0) / d0
-            deviation_rates.append(deviation_rate)
+            if not agent.conflict:
+                d0 = agent.get_dist_togoal()
+                d1 = agent.route_len
+                deviation_rate = (d1 - d0) / d0
+                deviation_rates.append(deviation_rate)
         return deviation_rates
 
     def reset(self):
@@ -731,6 +737,8 @@ class MultiAgentEnv_maddpg(MultiAgentEnv):
                 collision_value_row = collision_mat[i]
                 d = dist_mat[i]
                 self.collision_num += sum(collision_value_row == 1) / 2
+                if sum(collision_value_row == 1) / 2 != 0:
+                    agent.conflict = True
                 self.conflict_num_episode += sum(collision_value_row == 1) / 2
                 self.nmac_num += sum(d <= self.nmac_size) / 2
                 self.nmac_num_episode += sum(d <= self.nmac_size) / 2
@@ -898,11 +906,13 @@ class MultiAgentEnv_ppo(MultiAgentEnv):
 
     def route_deviation_rate(self):
         deviation_rates = []
+        # only for no conflict flight
         for i, agent in enumerate(self.agents):
-            d0 = agent.get_dist_togoal()
-            d1 = agent.route_len
-            deviation_rate = (d1 - d0) / d0
-            deviation_rates.append(deviation_rate)
+            if not agent.conflict:
+                d0 = agent.get_dist_togoal()
+                d1 = agent.route_len
+                deviation_rate = (d1 - d0) / d0
+                deviation_rates.append(deviation_rate)
         return deviation_rates
 
     def reset(self):
@@ -1012,12 +1022,14 @@ class MultiAgentEnv_ppo(MultiAgentEnv):
                 collision_value_row = collision_mat[i]
                 d = dist_mat[i]
                 self.collision_num += sum(collision_value_row == 1) / 2
+                if sum(collision_value_row == 1) / 2 != 0:
+                    agent.conflict = True
                 self.conflict_num_episode += sum(collision_value_row == 1) / 2
                 self.nmac_num += sum(d <= self.nmac_size) / 2
                 self.nmac_num_episode += sum(d <= self.nmac_size) / 2
                 # # no collision resolution
                 # agent.done = 0
-                if np.sum(collision_value_row) <= 0.05:
+                if np.sum(collision_value_row) <= 0.2:
                     agent.done = 0
                 else:
                     agent.done = 3

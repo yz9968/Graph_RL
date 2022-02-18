@@ -39,7 +39,7 @@ class Runner_DGN1:
         self.save_path = self.args.save_dir + '/' + self.args.scenario_name
         if not os.path.exists(self.save_path):
             os.makedirs(self.save_path)
-        self.model_name = '/20_agent/20_graph_rl_weight2.pth'
+        self.model_name = '/35_agent/35_graph_rl_weight2.pth'
         if os.path.exists(self.save_path + self.model_name):
             self.model.load_state_dict(torch.load(self.save_path + self.model_name))
             print("successfully load model: {}".format(self.model_name))
@@ -166,7 +166,7 @@ class Runner_DGN1:
         a[1][0].set_title('success_num')
         a[1][1].plot(x, nmac_total)
         a[1][1].set_title('nmac_num')
-        plt.savefig(self.save_path + '/50_agent/train_metric1.png', format='png')
+        # plt.savefig(self.save_path + '/50_agent/train_metric1.png', format='png')
         plt.show()
 
     def evaluate(self):
@@ -251,12 +251,13 @@ class Runner_DGN1:
                     adj = next_adj
                 else:
                     dev = self.env.route_deviation_rate()
-                    deviation.append(np.mean(dev))
+                    if dev:
+                        deviation.append(np.mean(dev))
                     break
             # np.save(self.save_path + '/20_agent/actions/' + str(episode) + 'actions.npy',
             #         np.array(self.env.actions_total))
 
-            if episode > 0 and episode % 50 == 0:
+            if episode > 0 and episode % 5 == 0:
                 self.env.render(mode='traj')
             # if episode > 0:
             #     self.env.render(mode='traj')

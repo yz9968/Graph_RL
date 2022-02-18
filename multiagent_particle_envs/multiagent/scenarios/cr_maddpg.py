@@ -58,6 +58,8 @@ class Scenario(BaseScenario):
             world.agents[i].set_time_step(world.dt)
 
     def generate_random_agent_attribute(self, world, agent_id):
+        # 固定场景
+        np.random.seed(0)
         square_width = world.boundary[1]
         if np.random.random() > 0.5:
             sign = -1
