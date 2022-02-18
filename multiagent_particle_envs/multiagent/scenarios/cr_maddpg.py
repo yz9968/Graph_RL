@@ -22,7 +22,7 @@ class Scenario(BaseScenario):
         # set size of the world
         world.set_world(-160, 160, -160, 160)
         # set any world properties first
-        self.num_agents = 20
+        self.num_agents = 35
         self.num_landmarks = self.num_agents
         world.collaborative = True
         # make initial conditions

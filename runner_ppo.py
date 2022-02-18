@@ -12,6 +12,7 @@ class Runner_PPO:
     def __init__(self, args, env):
         self.args = args
         self.epsilon = args.epsilon
+        self.epsilon_decay = args.epsilon_decay
         self.max_step = args.max_episode_len
         self.env = env
         self.agents = self.env.agents
@@ -30,7 +31,7 @@ class Runner_PPO:
         start = time.time()
         for episode in range(self.args.num_episodes):
             reward_episode = []
-            self.epsilon = max(0.05, self.epsilon - 0.00016)
+            self.epsilon = max(0.05, self.epsilon - self.epsilon_decay)
             s = self.env.reset()
             print("current_episode {}".format(episode))
             for steps in range(self.max_step):

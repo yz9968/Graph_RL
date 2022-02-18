@@ -19,6 +19,7 @@ class Runner_DGN1:
         USE_CUDA = torch.cuda.is_available()
         self.env = env
         self.epsilon = args.epsilon
+        self.epsilon_decay = args.epsilon_decay
         self.num_episode = args.num_episodes
         self.max_step = args.max_episode_len
         self.agents = self.env.agents
@@ -59,7 +60,7 @@ class Runner_DGN1:
         rl_model_dir = self.save_path + self.model_name
         while episode < self.num_episode:
             if episode > start_episode:
-                self.epsilon = max(0.05, self.epsilon - 0.00016)
+                self.epsilon = max(0.05, self.epsilon - self.epsilon_decay)
 
             episode += 1
             step = 0

@@ -52,8 +52,8 @@ class Scenario(BaseScenario):
             landmark.color = np.array([0.25, 0.25, 0.25])
         # set random initial states
         for i, agent in enumerate(world.agents):
-            px, py, gx, gy, vx, vy, theta = self.generate_random_agent_attribute(world, i)
-            # px, py, gx, gy, vx, vy, theta = self.generate_circle_agent_attribute(world, i)
+            # px, py, gx, gy, vx, vy, theta = self.generate_random_agent_attribute(world, i)
+            px, py, gx, gy, vx, vy, theta = self.generate_circle_agent_attribute(world, i)
             world.agents[i].set(px, py, gx, gy, vx, vy, theta)
             world.agents[i].set_time_step(world.dt)
 
