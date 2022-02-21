@@ -16,6 +16,7 @@ class Scenario(BaseScenario):
         self.time_penalty = -0.5
         self.angle_dev = 2.0
         self.exit_boundary = -10.0
+        self.episode = 0
 
     def make_world(self):
         world = World()
@@ -52,14 +53,15 @@ class Scenario(BaseScenario):
             landmark.color = np.array([0.25, 0.25, 0.25])
         # set random initial states
         for i, agent in enumerate(world.agents):
-            # px, py, gx, gy, vx, vy, theta = self.generate_random_agent_attribute(world, i)
-            px, py, gx, gy, vx, vy, theta = self.generate_circle_agent_attribute(world, i)
+            px, py, gx, gy, vx, vy, theta = self.generate_random_agent_attribute(world, i)
+            # px, py, gx, gy, vx, vy, theta = self.generate_circle_agent_attribute(world, i)
             world.agents[i].set(px, py, gx, gy, vx, vy, theta)
             world.agents[i].set_time_step(world.dt)
 
-    def generate_random_agent_attribute(self, world, agent_id, episode = 0):
+    def generate_random_agent_attribute(self, world, agent_id):
         # 固定场景
-        np.random.seed(episode)
+        np.random.seed(self.episode)
+        self.episode += 1
         square_width = world.boundary[1]
         if np.random.random() > 0.5:
             sign = -1

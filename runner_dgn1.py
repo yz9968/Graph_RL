@@ -258,7 +258,7 @@ class Runner_DGN1:
             # np.save(self.save_path + '/20_agent/actions/' + str(episode) + 'actions.npy',
             #         np.array(self.env.actions_total))
 
-            if episode > 0 and episode % 5 == 0:
+            if episode > 0 and episode % 50 == 0:
                 self.env.render(mode='traj')
             # if episode > 0:
             #     self.env.render(mode='traj')

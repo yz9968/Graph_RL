@@ -458,7 +458,7 @@ class MultiAgentEnv_GRL(MultiAgentEnv):
                 # # no collision resolution
                 # agent.done = 0
                 # print("sum collision_value", np.sum(collision_value_row))
-                if np.sum(collision_value_row) <= 0.05:
+                if np.sum(collision_value_row) <= 0.025:
                     agent.done = 0
                 else:
                     agent.done = 3
