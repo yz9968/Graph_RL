@@ -1,0 +1,7 @@
+{
+    "files.defaultLanguage": "python",
+    "python.formatting.provider": "yapf",
+    "code-runner.saveFileBeforeRun": true,
+    "code-runner.saveAllFilesBeforeRun": true,
+    "python.pythonPath": "C:\\Software\\Anaconda\\python.exe"
+}

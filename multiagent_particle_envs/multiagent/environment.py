@@ -11,6 +11,7 @@ from ppo.ppo import PPO
 from ppo.ppo_cnn import PPO_CNN
 from ppo.ppo_lstm import PPO_LSTM
 
+from gym.envs.classic_control import rendering
 
 
 # environment for all agents in the multiagent world
@@ -615,6 +616,8 @@ class MultiAgentEnv_maddpg(MultiAgentEnv):
         self.nmac_num_episode = None
         self.collision_value = None
 
+        self.viewer= rendering.Viewer(700,700)   # 画板的长和宽
+
     def route_deviation_rate(self):
         deviation_rates = []
         for i, agent in enumerate(self.agents):
@@ -626,6 +629,8 @@ class MultiAgentEnv_maddpg(MultiAgentEnv):
 
     def reset(self):
         # reset world
+        self.conflict_num_episode=0
+        self.nmac_num_episode=0
         self.reset_callback(self.world)
         for i, agent in enumerate(self.agents):
             policy = MADDPG(self.args, agent.agent_id)
@@ -860,6 +865,26 @@ class MultiAgentEnv_maddpg(MultiAgentEnv):
         elif mode == 'video':
             pass
 
+    def m_render(self,mode='human'):
+        self.viewer.geoms.clear()
+        self.viewer.onetime_geoms.clear()
+        
+        if mode=='human':
+            for agent in self.agents:
+                circle=rendering.make_circle(agent.radius)
+                graph_transform=rendering.Transform(translation=tuple([i*2 +self.viewer.width/2 for i in  agent.get_position()]))
+                circle.add_attr(graph_transform)
+                self.viewer.add_geom(circle)
+            return self.viewer.render(return_rgb_array=mode == 'rgb_array')
+        elif mode=='traj':
+            agents_positions = [[self.states[i][j].position for j in range(self.agent_num)] for i in range(len(self.states))]
+            goal_x = [self.agents[i].gx for i in range(self.agent_num)]
+            goal_y = [self.agents[i].gy for i in range(self.agent_num)]
+            start_x = [self.agents[i].sx for i in range(self.agent_num)]
+            start_y = [self.agents[i].sy for i in range(self.agent_num)]
+
+
+        pass
 # environment for all agents in the multiagent world of ppo
 class MultiAgentEnv_ppo(MultiAgentEnv):
     def __init__(self, world, reset_callback=None, reward_callback=None,

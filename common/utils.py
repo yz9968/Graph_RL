@@ -39,7 +39,7 @@ def make_env(args):
     scenario = scenarios.load(args.scenario_name + ".py").Scenario()
 
     # create world
-    world = scenario.make_world()
+    world = scenario.make_world(args.n_agents)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "cpu")
     logging.info('Using device: %s', device)
