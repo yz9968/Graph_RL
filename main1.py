@@ -19,7 +19,7 @@ if __name__ == '__main__':
     
     # need to try: 8 15 20 30 50
     args.n_agents = 50 # default 30 
-    args.render=True
+    args.render=False
 
     env, args = make_env(args)
     runner = Runner_maddpg(args, env)
