@@ -35,8 +35,12 @@ class Runner_maddpg:
             s = self.env.reset()
             print("current_episode {}".format(episode))
             for steps in range(self.max_step):
+                if steps % 20 == 0:
+                    print('episode: {}, step: {}'.format(episode,steps))
                 self.noise = max(0.05, self.noise - 0.0000005)
                 if not self.env.simulation_done:
+                    # self.env.render(mode='traj')
+                    self.env.m_render()
                     actions = []
                     u = []
                     with torch.no_grad():
@@ -67,8 +71,8 @@ class Runner_maddpg:
 
             if episode > 0 and episode % self.args.evaluate_rate == 0:
                 rew, info = self.evaluate()
-                if episode % (5 * self.args.evaluate_rate) == 0:
-                    self.env.render(mode='traj')
+                # if episode % (5 * self.args.evaluate_rate) == 0:
+                #     self.env.render(mode='traj')
                 returns.append(rew)
                 conflict_total.append(info[0])
                 collide_wall_total.append(info[1])
@@ -83,8 +87,8 @@ class Runner_maddpg:
         plt.plot(range(1, len(returns)), returns[1:])
         plt.xlabel('evaluate num')
         plt.ylabel('average returns')
-        plt.savefig(self.save_path + '/35_train_return.png', format='png')
-        np.save(self.save_path + '/35_train_returns.pkl', returns)
+        plt.savefig(self.save_path + '/{}_train_return.png'.format(self.args.n_agents), format='png')
+        np.save(self.save_path + '/{}_train_returns.pkl'.format(self.args.n_agents), returns)
 
         fig, a = plt.subplots(2, 2)
         x = range(len(conflict_total))
@@ -96,8 +100,8 @@ class Runner_maddpg:
         a[1][0].set_title('success_num')
         a[1][1].plot(x, nmac_total)
         a[1][1].set_title('nmac_num')
-        plt.savefig(self.save_path + '/35_train_metric.png', format='png')
-        np.save(self.save_path + '/35_train_returns.pkl', conflict_total)
+        plt.savefig(self.save_path + '/{}_train_metric.png'.format(self.args.n_agents), format='png')
+        np.save(self.save_path + '/{}_train_returns.pkl'.format(self.args.n_agents), conflict_total)
 
         plt.show()
 
@@ -115,6 +119,7 @@ class Runner_maddpg:
             rewards = 0
             for time_step in range(self.args.evaluate_episode_len):
                 # self.env.render()
+                self.env.m_render()
                 if not self.env.simulation_done:
                     actions = []
                     with torch.no_grad():
@@ -156,6 +161,9 @@ class Runner_maddpg:
         self.env.nmac_num = 0
         returns = []
         eval_episode = 100
+        
+        time_num = time.strftime("%Y%m%d%H%M%S", time.localtime(time.time()))
+
         for episode in range(eval_episode):
             # reset the environment
             s = self.env.reset()
@@ -176,8 +184,8 @@ class Runner_maddpg:
                     deviation.append(np.mean(dev))
                     break
 
-            if episode > 0 and episode % 50 == 0:
-                self.env.render(mode='traj')
+            # if episode > 0 and episode % 50 == 0:
+            #     self.env.render(mode='traj')
 
             # plt.figure()
             # plt.title('collision_value——time')
@@ -220,6 +228,13 @@ class Runner_maddpg:
         ave_success = np.mean(success_total)
         ave_exit = np.mean(collide_wall_total)
         zero_conflict = sum(np.array(conflict_total) == 0)
+
+        np.save(
+            self.save_path + '/{}_agent_evaluate_metrics_{}.npy'.format(self.agent_num, time_num),
+            [ave_conflict, ave_nmac, ave_success/self.agent_num, ave_exit/self.agent_num,
+             zero_conflict/len(conflict_total), np.mean(deviation)]
+        )
+
         print("平均冲突数", ave_conflict)
         print("平均NMAC数", ave_nmac)
         print("平均成功率", ave_success / self.agent_num)
@@ -234,6 +249,6 @@ class Runner_maddpg:
         a[1][0].set_title('success_num')
         a[1][1].plot(x, nmac_total)
         a[1][1].set_title('nmac_num')
-        # plt.savefig(self.save_path + '/30_eval_metric.png', format='png')
+        plt.savefig(self.save_path + '/{}_eval_metric_02211034.png'.format(self.args.n_agents), format='png')
 
         plt.show()

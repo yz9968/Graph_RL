@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-dir = "C:\\Users\\lenovo\\PycharmProjects\\project\\GRL\\model\\"
+dir = r"C:\File\Traffic\强化学习\Graph_RL\model"
 
 maddpg_dir = dir + "cr_maddpg\\collision_value\\30_agent\\" + "86collision_value.npy"
 ppo_dir = dir + "cr_ppo\\collision_value\\30_agent\\" + "60collision_value.npy"

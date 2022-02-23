@@ -17,12 +17,12 @@ class Scenario(BaseScenario):
         self.angle_dev = 2.0
         self.exit_boundary = -10.0
 
-    def make_world(self):
+    def make_world(self,agent_num):
         world = World()
         # set size of the world
         world.set_world(-160, 160, -160, 160)
         # set any world properties first
-        self.num_agents = 50
+        self.num_agents = agent_num
         self.num_landmarks = self.num_agents
         world.collaborative = True
         # make initial conditions

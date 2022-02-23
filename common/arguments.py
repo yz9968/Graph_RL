@@ -11,7 +11,7 @@ def get_args():
     # device setting
     parser.add_argument('--gpu', default=True, action='store_true')
     # Environment
-    parser.add_argument("--scenario-name", type=str, default="cr_grl", help="name of the scenario script")
+    parser.add_argument("--scenario-name", type=str, default="cr_maddpg", help="name of the scenario script")
     # parser.add_argument("--scenario-name", type=str, default="collision_avoidance", help="name of the scenario script")
     parser.add_argument("--max-episode-len", type=int, default=200, help="maximum time steps in an episode")
     parser.add_argument("--num-episodes", type=int, default=5001, help="number of train episodes")

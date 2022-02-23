@@ -77,8 +77,8 @@ class Runner_PPO:
         plt.plot(range(1, len(returns)), returns[1:])
         plt.xlabel('evaluate num')
         plt.ylabel('average returns')
-        plt.savefig(self.save_path + '/35_train_return.png', format='png')
-        np.save(self.save_path + '/35_train_returns', returns)
+        plt.savefig(self.save_path + '/{}_train_return.png'.format(self.agent_num), format='png')
+        np.save(self.save_path + '/{}_train_returns'.format(self.agent_num), returns)
 
         fig, a = plt.subplots(2, 2)
         x = range(len(conflict_total))
@@ -90,8 +90,8 @@ class Runner_PPO:
         a[1][0].set_title('success_num')
         a[1][1].plot(x, nmac_total)
         a[1][1].set_title('nmac_num')
-        plt.savefig(self.save_path + '/35_train_metric.png', format='png')
-        np.save(self.save_path + '/35_train_returns', conflict_total)
+        plt.savefig(self.save_path + '/{}_train_metric.png'.format(self.agent_num), format='png')
+        np.save(self.save_path + '/{}_train_returns'.format(self.agent_num), conflict_total)
 
         plt.show()
 
@@ -149,6 +149,9 @@ class Runner_PPO:
         self.env.success_num = 0
         returns = []
         eval_episode = 100
+
+        time_num = time.strftime("%Y%m%d%H%M%S", time.localtime(time.time()))
+
         for episode in range(eval_episode):
             # reset the environment
             s = self.env.reset()
@@ -178,8 +181,10 @@ class Runner_PPO:
             plt.plot(x, self.env.collision_value)
             plt.xlabel('timestep')
             plt.ylabel('collision_value')
-            plt.savefig(self.save_path + '/collision_value/30_agent/' + str(episode) + 'collision_value.png', format='png')
-            np.save(self.save_path + '/collision_value/30_agent/' + str(episode) + 'collision_value.npy', self.env.collision_value)
+            if not os.path.isdir(self.save_path + '/collision_value/{}_agent_{}/'.format(self.agent_num,time_num)):
+                os.makedirs(self.save_path + '/collision_value/{}_agent_{}/'.format(self.agent_num,time_num))
+            plt.savefig(self.save_path + '/collision_value/{}_agent_{}/'.format(self.agent_num,time_num) + str(episode) + 'collision_value.png', format='png')
+            np.save(self.save_path + '/collision_value/{}_agent_{}/'.format(self.agent_num,time_num) + str(episode) + 'collision_value.npy', self.env.collision_value)
             plt.close()
 
             rewards = rewards / 1000
@@ -211,12 +216,20 @@ class Runner_PPO:
         ave_success = np.mean(success_total)
         ave_exit = np.mean(collide_wall_total)
         zero_conflict = sum(np.array(conflict_total) == 0)
+        print()
         print("平均冲突数", ave_conflict)
         print("平均NMAC数", ave_nmac)
         print("平均成功率", ave_success / self.agent_num)
         print("平均出界率", ave_exit / self.agent_num)
         print("0冲突占比：", zero_conflict / len(conflict_total))
         print("平均偏差率", np.mean(deviation))
+
+        np.save(
+            self.save_path + '/{}_agent_evaluate_metrics_{}.npy'.format(self.agent_num, time_num),
+            [ave_conflict, ave_nmac, ave_success/self.agent_num, ave_exit/self.agent_num,
+             zero_conflict/len(conflict_total), np.mean(deviation)]
+        )
+
         a[0][0].plot(x, conflict_total, 'b')
         a[0][0].set_title('conflict_num')
         a[0][1].plot(x, collide_wall_total, 'y')
@@ -225,6 +238,6 @@ class Runner_PPO:
         a[1][0].set_title('success_num')
         a[1][1].plot(x, nmac_total)
         a[1][1].set_title('nmac_num')
-        # plt.savefig(self.save_path + '/8_eval_metric.png', format='png')
+        plt.savefig(self.save_path + '/{}_eval_metric_{}.png'.format(self.agent_num,time_num), format='png')
 
-        plt.show()
+        # plt.show()
